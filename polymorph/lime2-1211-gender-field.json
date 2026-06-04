@@ -1,0 +1,14 @@
+{
+  "_note": "Polymorph MCP wiring demonstration for LIME2-1211. The real change is already merged on main in sites/matsapha/configs/openmrs/frontend_config/msf-matsapha-frontend-config.json (commit 11ef1a33). Close this PR without merging.",
+  "@openmrs/esm-patient-registration-app": {
+    "fieldDefinitions": [
+      {
+        "id": "genderIdentity",
+        "type": "person attribute",
+        "uuid": "a3afd9ce-4123-4f04-8de4-0032d49bf8f9",
+        "label": "Gender",
+        "answerConceptSetUuid": "ec42d68d-3e23-43de-b8c5-a03bb538e7c7"
+      }
+    ]
+  }
+}
