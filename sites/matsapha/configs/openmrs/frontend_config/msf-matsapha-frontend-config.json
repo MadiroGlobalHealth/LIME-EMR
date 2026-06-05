@@ -381,11 +381,12 @@
         "type": "person attribute",
         "uuid": "7ed1588d-53ff-4d56-a583-90c709ef9753",
         "label": "Date of first visit",
+        "allowFutureDates": false,
         "validation": {
           "required": false,
-          "type": "date"
-        },
-        "answerConceptSetUuid": "9a714fad-091e-4821-a547-7d6bc0d83a67"
+          "type": "date",
+          "matches": "^(0?[1-9]|[12]\\d|3[01])/(0?[1-9]|1[0-2])/\\d{4}$"
+        }
       }
     ],
     "sectionDefinitions": [
@@ -449,6 +450,11 @@
     "registrationObs": {
       "encounterTypeUuid": "10d061d8-0677-47f2-8061-f302244dc48b",
       "encounterProviderRoleUuid": "240b26f9-dd88-4172-823d-4a8bfeb7841f"
+    },
+    "Translation overrides": {
+      "fr": {
+        "Date of first visit": "Date de la première visite"
+      }
     }
   },
   "@openmrs/esm-form-builder-app": {
