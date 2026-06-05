@@ -195,6 +195,18 @@
         "answerConceptSetUuid": "1e18d5f5-c539-479f-a18b-0b5aaeb01e34"
       },
       {
+        "id": "dateOfFirstVisit",
+        "type": "person attribute",
+        "uuid": "7ed1588d-53ff-4d56-a583-90c709ef9753",
+        "label": "Date of first visit",
+        "allowFutureDates": false,
+        "validation": {
+          "required": false,
+          "type": "date",
+          "matches": "^(0?[1-9]|[12]\\d|3[01])\/(0?[1-9]|1[0-2])\/\\d{4}$"
+        }
+      },
+      {
         "id": "telephoneNumber",
         "type": "person attribute",
         "uuid": "bc851ec1-9fb7-49da-acd7-1a61168002fe",
@@ -353,7 +365,7 @@
       {
         "id": "basicInfo",
         "name": "Basic info",
-        "fields": ["name", "gender", "genderIdentity", "dob", "id"]
+        "fields": ["name", "gender", "genderIdentity", "dob", "id", "dateOfFirstVisit"]
       },
       {
         "id": "additionalInformation",
