@@ -310,7 +310,7 @@
       },
       {
         "tagName": "Procedures",
-        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/Appointments"
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/Procedures"
       },
       {
         "tagName": "Appointments",
