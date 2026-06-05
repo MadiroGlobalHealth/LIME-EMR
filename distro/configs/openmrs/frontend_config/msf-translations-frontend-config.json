@@ -96,7 +96,27 @@
         "noPatientContextSubtitle": "Ouvrez un dossier patient pour utiliser ce bouton.",
         "notification": "Notification",
         "or": "ou",
-        "tryAgainMessage": "Essayez d'ouvrir un autre formulaire depuis"
+        "tryAgainMessage": "Essayez d'ouvrir un autre formulaire depuis",
+        "F15-Surgical safety checklist": "F15-Checklist de sécurité chirurgicale",
+        "F16-Operative report": "F16-Compte-rendu opératoire",
+        "F17-Surgery admission": "F17-Chirurgie admission",
+        "F18-Surgery discharge": "F18-Chirurgie sortie",
+        "F19-Pre-anesthesia record": "F19-Fiche pré-anesthésie",
+        "F20-Post-anesthesia recovery": "F20-Réveil post-anesthésique",
+        "F21-Anesthesia transfer": "F21-Transfer anesthésie",
+        "F29-MHPSS first consultation": "F29-MHPSS 1ère consultation",
+        "F30-MHPSS follow-up consultation": "F30-MHPSS consultation de suivi",
+        "F31-mhGAP first consultation": "F31-mhGAP 1ère consultation",
+        "F32-mhGAP follow-up consultation": "F32-mhGAP consultation de suivi",
+        "F33-MHPSS closure": "F33-MHPSS cloture",
+        "F34-mhGAP closure": "F34-mhGAP cloture",
+        "F40-Referral & Discharge": "F40-Réference & Sortie",
+        "F46-Minor procedure report": "F46-Compte-rendu petite intervention",
+        "F47-Pre-donation": "F47-Pré-donation",
+        "F48-Blood transfusion": "F48-Transfusion sanguine",
+        "F75-Dressing": "F75-Pansement",
+        "F76-Radiology request": "F76-Demande radiologie",
+        "Admission to service": "Admission en service"
       }
     }
   },
