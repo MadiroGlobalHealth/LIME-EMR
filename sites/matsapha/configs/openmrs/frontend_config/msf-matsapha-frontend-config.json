@@ -5,24 +5,18 @@
         "configure": {
           "active-visits-widget": {
             "Display conditions": {
-              "privileges": [
-                "Configure Visits"
-              ]
+              "privileges": ["Configure Visits"]
             }
           }
         }
       },
       "homepage-dashboard-slot": {
-        "remove": [
-          "service-queues-dashboard-link"
-        ]
+        "remove": ["service-queues-dashboard-link"]
       }
     }
   },
   "@openmrs/esm-app-shell": {
-    "Enabled feature flags": [
-      "enable-embedded-form-view"
-    ]
+    "Enabled feature flags": ["enable-embedded-form-view"]
   },
   "@openmrs/esm-form-engine-app": {
     "hideUnansweredQuestionsInReadonlyForms": true
@@ -32,13 +26,9 @@
   },
   "@openmrs/esm-patient-chart-app": {
     "Display conditions": {
-      "privileges": [
-        "Patient Dashboard - View Patient Summary"
-      ]
+      "privileges": ["Patient Dashboard - View Patient Summary"]
     },
-    "notesConceptUuids": [
-      "a3380b6e-c41e-4c7e-a85b-11c1573ae70e"
-    ],
+    "notesConceptUuids": ["a3380b6e-c41e-4c7e-a85b-11c1573ae70e"],
     "encounterEditableDuration": 1440,
     "extensionSlots": {
       "patient-chart-dashboard-slot": {
@@ -50,114 +40,82 @@
         "configure": {
           "charts-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Patient Dashboard - View Patient Summary"
-              ]
+              "privileges": ["Patient Dashboard - View Patient Summary"]
             }
           },
           "medications-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Manage Patient Medication"
-              ]
+              "privileges": ["Manage Patient Medication"]
             }
           },
           "encounters-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Configure Visits"
-              ]
+              "privileges": ["Configure Visits"]
             }
           },
           "allergies-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Patient Overview - View Allergies"
-              ]
+              "privileges": ["Patient Overview - View Allergies"]
             }
           },
           "laboratory-patient-chart-link": {
             "Display conditions": {
-              "privileges": [
-                "Manage Patient Investigation"
-              ]
+              "privileges": ["Manage Patient Investigation"]
             }
           },
           "results-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Patient Dashboard - View Encounters Section"
-              ]
+              "privileges": ["Patient Dashboard - View Encounters Section"]
             }
           },
           "programs-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Patient Overview - View Programs"
-              ]
+              "privileges": ["Patient Overview - View Programs"]
             }
           },
           "test-results-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "View Concepts"
-              ]
+              "privileges": ["View Concepts"]
             }
           },
           "immunization-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Manage Immunization Summary"
-              ]
+              "privileges": ["Manage Immunization Summary"]
             }
           },
           "patient-appointments-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Manage Appointments"
-              ]
+              "privileges": ["Manage Appointments"]
             }
           },
           "visit-header-right-slot": {
             "Display conditions": {
-              "privileges": [
-                "Configure Visits"
-              ]
+              "privileges": ["Configure Visits"]
             }
           },
           "patient-orders-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Manage Patient Orders"
-              ]
+              "privileges": ["Manage Patient Orders"]
             }
           },
           "conditions-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Patient Dashboard - View Conditions"
-              ]
+              "privileges": ["Patient Dashboard - View Conditions"]
             }
           },
           "attachments-results-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Manage Patient Orders"
-              ]
+              "privileges": ["Manage Patient Orders"]
             }
           },
           "patient-mental-health-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "View Mental Health"
-              ]
+              "privileges": ["View Mental Health"]
             }
           },
           "patient-nutrition-summary-dashboard": {
             "Display conditions": {
-              "privileges": [
-                "Manage Nutrition"
-              ]
+              "privileges": ["Manage Nutrition"]
             }
           }
         }
@@ -166,9 +124,7 @@
         "configure": {
           "laboratory-orders-summary": {
             "Display conditions": {
-              "privileges": [
-                "Manage Patient Lab Orders"
-              ]
+              "privileges": ["Manage Patient Lab Orders"]
             }
           }
         }
@@ -177,9 +133,7 @@
         "configure": {
           "immunization-details-widget": {
             "Display conditions": {
-              "privileges": [
-                "Manage Patient Immunization Orders"
-              ]
+              "privileges": ["Manage Patient Immunization Orders"]
             }
           }
         }
@@ -188,30 +142,22 @@
         "configure": {
           "order-basket-action-menu": {
             "Display conditions": {
-              "privileges": [
-                "Manage Order Basket"
-              ]
+              "privileges": ["Manage Order Basket"]
             }
           },
           "visit-note-nav-button": {
             "Display conditions": {
-              "privileges": [
-                "Manage Visit Note"
-              ]
+              "privileges": ["Manage Visit Note"]
             }
           },
           "clinical-form-action-menu": {
             "Display conditions": {
-              "privileges": [
-                "Manage Clinical Forms"
-              ]
+              "privileges": ["Manage Clinical Forms"]
             }
           },
           "patient-lists-action-menu": {
             "Display conditions": {
-              "privileges": [
-                "View Patients"
-              ]
+              "privileges": ["View Patients"]
             }
           }
         }
@@ -220,16 +166,12 @@
   },
   "@openmrs/esm-patient-attachments-app": {
     "Display conditions": {
-      "privileges": [
-        "Add Attachments"
-      ]
+      "privileges": ["Add Attachments"]
     }
   },
   "@openmrs/esm-patient-orders-app": {
     "Display conditions": {
-      "privileges": [
-        "Manage Patient Orders"
-      ]
+      "privileges": ["Manage Patient Orders"]
     }
   },
   "@openmrs/esm-patient-registration-app": {
@@ -248,25 +190,15 @@
       {
         "id": "genderIdentity",
         "type": "person attribute",
-        "uuid": "a3afd9ce-4123-4f04-8de4-0032d49bf8f9",
-        "label": "Gender",
-        "answerConceptSetUuid": "ec42d68d-3e23-43de-b8c5-a03bb538e7c7"
+        "uuid": "42ac2c39-30e7-42ed-8475-c610971530de",
+        "label": "Gender Identity",
+        "answerConceptSetUuid": "1e18d5f5-c539-479f-a18b-0b5aaeb01e34"
       },
       {
         "id": "telephoneNumber",
         "type": "person attribute",
         "uuid": "bc851ec1-9fb7-49da-acd7-1a61168002fe",
         "label": "Telephone Number",
-        "validation": {
-          "required": false,
-          "matches": "^\\+?(\\d{1,3})?[-.\\s]?(\\(?\\d{1,4}?\\)?)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}$"
-        }
-      },
-      {
-        "id": "secondTelephoneNumber",
-        "type": "person attribute",
-        "uuid": "c8e29544-e9a8-4422-9e93-7bc705a75898",
-        "label": "Second Phone Number",
         "validation": {
           "required": false,
           "matches": "^\\+?(\\d{1,3})?[-.\\s]?(\\(?\\d{1,4}?\\)?)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}$"
@@ -351,11 +283,41 @@
         }
       },
       {
-        "id": "partnershipStatus",
+        "id": "maritalStatus",
         "type": "person attribute",
-        "uuid": "2225132f-0a04-436d-929d-cd24e6af4cd2",
-        "label": "Partnership status",
-        "answerConceptSetUuid": "0a303b92-2bc3-4693-bbcb-a27cab95736a"
+        "uuid": "3884dc76-c271-4bcb-8df8-81c6fb897f53",
+        "label": "Marital status",
+        "answerConceptSetUuid": "544ef960-3b65-4add-8795-96b2b084faa3"
+      },
+      {
+        "id": "currentStatus",
+        "type": "person attribute",
+        "uuid": "e0b6ed99-72c4-4847-a442-e9929eac4a0f",
+        "label": "Current Status",
+        "validation": {
+          "required": false
+        },
+        "answerConceptSetUuid": "b3767edc-78f5-4d0f-a2d8-564ae58d00cf"
+      },
+      {
+        "id": "nationality",
+        "type": "person attribute",
+        "uuid": "24d1fa23-9778-4a8e-9f7b-93f694fc25e2",
+        "label": "Nationality",
+        "validation": {
+          "required": false
+        },
+        "answerConceptSetUuid": "3dc96ee4-daea-4460-b141-6b31f7b7ae93"
+      },
+      {
+        "id": "legalStatus",
+        "type": "person attribute",
+        "uuid": "a9b2c642-097f-43f8-b96b-4d2f50ffd9b1",
+        "label": "Legal Status",
+        "validation": {
+          "required": false
+        },
+        "answerConceptSetUuid": "9728c2ff-a489-4e97-94d0-07e02f403baa"
       },
       {
         "id": "occupation",
@@ -370,55 +332,46 @@
       {
         "id": "occupationOther",
         "type": "person attribute",
-        "uuid": "34dfe9c6-c3f7-44ca-8951-e3806543a8a6",
-        "label": "Occupation, if other specify",
+        "uuid": "77512c79-0cf9-4628-b62f-b451ce5dea4f",
+        "label": "If other, specify occupation",
         "validation": {
           "required": false
         }
       },
       {
-        "id": "dateOfFirstVisit",
+        "id": "numberOfChildren",
         "type": "person attribute",
-        "uuid": "7ed1588d-53ff-4d56-a583-90c709ef9753",
-        "label": "Date of first visit",
+        "uuid": "e363161a-9d5c-4331-8463-238938f018ed",
+        "label": "Number of Children",
         "validation": {
           "required": false,
-          "type": "date"
-        },
-        "answerConceptSetUuid": "9a714fad-091e-4821-a547-7d6bc0d83a67"
+          "matches": "^(0|[1-9][0-9]?|100)$"
+        }
       }
     ],
     "sectionDefinitions": [
       {
         "id": "basicInfo",
         "name": "Basic info",
-        "fields": [
-          "name",
-          "gender",
-          "genderIdentity",
-          "dob",
-          "id"
-        ]
+        "fields": ["name", "gender", "genderIdentity", "dob", "id"]
       },
       {
         "id": "additionalInformation",
         "name": "Demographics",
         "fields": [
-          "partnershipStatus",
+          "nationality",
+          "currentStatus",
+          "legalStatus",
+          "maritalStatus",
           "occupation",
           "occupationOther",
-          "dateOfFirstVisit"
+          "numberOfChildren"
         ]
       },
       {
         "id": "contact",
         "name": "Contact Details",
-        "fields": [
-          "address",
-          "telephoneNumber",
-          "secondTelephoneNumber",
-          "emailAddress"
-        ]
+        "fields": ["address", "telephoneNumber", "emailAddress"]
       },
       {
         "id": "emergencyContacts",
@@ -461,9 +414,7 @@
         "configure": {
           "dispensing-link": {
             "Display conditions": {
-              "privileges": [
-                "Edit Medication Dispense"
-              ]
+              "privileges": ["Edit Medication Dispense"]
             }
           }
         }
@@ -589,9 +540,7 @@
       }
     ],
     "orders": {
-      "labOrderableConcepts": [
-        "a781d229-0de6-44c0-86ab-2194aae85f77"
-      ]
+      "labOrderableConcepts": ["a781d229-0de6-44c0-86ab-2194aae85f77"]
     },
     "showReferenceNumberField": false
   },
@@ -654,12 +603,8 @@
   "@openmrs/esm-patient-banner-app": {
     "extensionSlots": {
       "patient-banner-tags-slot": {
-        "add": [
-          "person-attribute-tag#genderIdentity"
-        ],
-        "order": [
-          "person-attribute-tag#genderIdentity"
-        ],
+        "add": ["person-attribute-tag#genderIdentity"],
+        "order": ["person-attribute-tag#genderIdentity"],
         "configure": {
           "person-attribute-tag#genderIdentity": {
             "attributeType": "42ac2c39-30e7-42ed-8475-c610971530de"
