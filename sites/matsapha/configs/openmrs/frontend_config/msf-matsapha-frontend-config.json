@@ -330,6 +330,15 @@
         "answerConceptSetUuid": "f22eb938-f41b-4f20-b01d-238aeef64e23"
       },
       {
+        "id": "otherOccupation",
+        "type": "person attribute",
+        "uuid": "e827d76f-c18d-4aae-89c3-0ab32c2390f4",
+        "label": "Other occupation (specify)",
+        "validation": {
+          "required": false
+        }
+      },
+      {
         "id": "numberOfChildren",
         "type": "person attribute",
         "uuid": "e363161a-9d5c-4331-8463-238938f018ed",
@@ -355,6 +364,7 @@
           "legalStatus",
           "maritalStatus",
           "occupation",
+          "otherOccupation",
           "numberOfChildren"
         ]
       },
