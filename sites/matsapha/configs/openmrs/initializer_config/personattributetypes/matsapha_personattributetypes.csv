@@ -1,2 +1,3 @@
 Uuid,Void/Retire,Name,Description,Format,foreign uuid,Searchable
 282a4e10-9d75-4161-9cfe-7632989019d1,,Sex at birth,Sex at birth,org.openmrs.Concept,a0b79c90-3571-4c2d-876e-7cc3e58bfa8f,true
+e827d76f-c18d-4aae-89c3-0ab32c2390f4,,Other occupation,Free-text occupation captured when 'Other' is selected in the Occupation dropdown,java.lang.String,,false
