@@ -7,7 +7,7 @@
                     &lt;nameMappings class="properties"&gt;
                         &lt;property name="country" value="Location.country"/&gt;
                         &lt;property name="stateProvince" value="Region"/&gt;
-                        &lt;property name="cityVillage" value="Inkhundia"/&gt;
+                        &lt;property name="cityVillage" value="Inkhundla"/&gt;
                         &lt;property name="address1" value="Location.address1"/&gt;
                         &lt;property name="address2" value="Location.address2"/&gt;
                     &lt;/nameMappings&gt;
