@@ -1,0 +1,3 @@
+workflows:
+  wf1-dhis2-omrs-migration:
+    name: wf1-dhis2-omrs-migration
