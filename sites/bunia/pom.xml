@@ -130,6 +130,24 @@
                 <echo message="Adding MSF Bunia frontend config"/>
                 <replaceregexp file="${project.build.directory}/${project.artifactId}-${project.version}/run/docker/.env"
                                match="(SPA_CONFIG_URLS=.+)" replace="\1,/openmrs/spa/configs/msf-bunia-frontend-config.json" />
+                <replaceregexp file="${project.build.directory}/${project.artifactId}-${project.version}/run/docker/concatenated.env"
+                               match="(SPA_CONFIG_URLS=.+)" replace="\1,/openmrs/spa/configs/msf-bunia-frontend-config.json" />
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>Set MSF Bunia Default Locale</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <echo message="Setting MSF Bunia default locale to fr"/>
+                <replaceregexp file="${project.build.directory}/${project.artifactId}-${project.version}/run/docker/.env"
+                               match="(SPA_DEFAULT_LOCALE=.+)" replace="SPA_DEFAULT_LOCALE=fr" />
+                <replaceregexp file="${project.build.directory}/${project.artifactId}-${project.version}/run/docker/concatenated.env"
+                               match="(SPA_DEFAULT_LOCALE=.+)" replace="SPA_DEFAULT_LOCALE=fr" />
               </target>
             </configuration>
           </execution>
