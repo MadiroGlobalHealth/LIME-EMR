@@ -190,15 +190,25 @@
       {
         "id": "genderIdentity",
         "type": "person attribute",
-        "uuid": "42ac2c39-30e7-42ed-8475-c610971530de",
-        "label": "Gender Identity",
-        "answerConceptSetUuid": "1e18d5f5-c539-479f-a18b-0b5aaeb01e34"
+        "uuid": "a3afd9ce-4123-4f04-8de4-0032d49bf8f9",
+        "label": "Gender",
+        "answerConceptSetUuid": "ec42d68d-3e23-43de-b8c5-a03bb538e7c7"
       },
       {
         "id": "telephoneNumber",
         "type": "person attribute",
         "uuid": "bc851ec1-9fb7-49da-acd7-1a61168002fe",
         "label": "Telephone Number",
+        "validation": {
+          "required": false,
+          "matches": "^\\+?(\\d{1,3})?[-.\\s]?(\\(?\\d{1,4}?\\)?)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}$"
+        }
+      },
+      {
+        "id": "secondTelephoneNumber",
+        "type": "person attribute",
+        "uuid": "c8e29544-e9a8-4422-9e93-7bc705a75898",
+        "label": "Second Phone Number",
         "validation": {
           "required": false,
           "matches": "^\\+?(\\d{1,3})?[-.\\s]?(\\(?\\d{1,4}?\\)?)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}$"
@@ -283,41 +293,11 @@
         }
       },
       {
-        "id": "maritalStatus",
+        "id": "partnershipStatus",
         "type": "person attribute",
-        "uuid": "3884dc76-c271-4bcb-8df8-81c6fb897f53",
-        "label": "Marital status",
-        "answerConceptSetUuid": "544ef960-3b65-4add-8795-96b2b084faa3"
-      },
-      {
-        "id": "currentStatus",
-        "type": "person attribute",
-        "uuid": "e0b6ed99-72c4-4847-a442-e9929eac4a0f",
-        "label": "Current Status",
-        "validation": {
-          "required": false
-        },
-        "answerConceptSetUuid": "b3767edc-78f5-4d0f-a2d8-564ae58d00cf"
-      },
-      {
-        "id": "nationality",
-        "type": "person attribute",
-        "uuid": "24d1fa23-9778-4a8e-9f7b-93f694fc25e2",
-        "label": "Nationality",
-        "validation": {
-          "required": false
-        },
-        "answerConceptSetUuid": "3dc96ee4-daea-4460-b141-6b31f7b7ae93"
-      },
-      {
-        "id": "legalStatus",
-        "type": "person attribute",
-        "uuid": "a9b2c642-097f-43f8-b96b-4d2f50ffd9b1",
-        "label": "Legal Status",
-        "validation": {
-          "required": false
-        },
-        "answerConceptSetUuid": "9728c2ff-a489-4e97-94d0-07e02f403baa"
+        "uuid": "2225132f-0a04-436d-929d-cd24e6af4cd2",
+        "label": "Partnership status",
+        "answerConceptSetUuid": "0a303b92-2bc3-4693-bbcb-a27cab95736a"
       },
       {
         "id": "occupation",
@@ -339,14 +319,15 @@
         }
       },
       {
-        "id": "numberOfChildren",
+        "id": "dateOfFirstVisit",
         "type": "person attribute",
-        "uuid": "e363161a-9d5c-4331-8463-238938f018ed",
-        "label": "Number of Children",
+        "uuid": "7ed1588d-53ff-4d56-a583-90c709ef9753",
+        "label": "Date of first visit",
         "validation": {
           "required": false,
-          "matches": "^(0|[1-9][0-9]?|100)$"
-        }
+          "type": "date"
+        },
+        "answerConceptSetUuid": "9a714fad-091e-4821-a547-7d6bc0d83a67"
       }
     ],
     "sectionDefinitions": [
@@ -359,19 +340,16 @@
         "id": "additionalInformation",
         "name": "Demographics",
         "fields": [
-          "nationality",
-          "currentStatus",
-          "legalStatus",
-          "maritalStatus",
+          "partnershipStatus",
           "occupation",
           "occupationOther",
-          "numberOfChildren"
+          "dateOfFirstVisit"
         ]
       },
       {
         "id": "contact",
         "name": "Contact Details",
-        "fields": ["address", "telephoneNumber", "emailAddress"]
+        "fields": ["address", "telephoneNumber", "secondTelephoneNumber", "emailAddress"]
       },
       {
         "id": "emergencyContacts",
