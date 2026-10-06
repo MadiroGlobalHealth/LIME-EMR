@@ -47,11 +47,10 @@ def repo_config(args):
 def data(repo):
     lib = yaml.safe_load(open(LIBRARY, encoding="utf-8"))
     sites = sorted(load_all(), key=lambda s: (STATUS_ORDER.get(s.get("status"), 9), s.get("name") or s["id"]))
-    commits = [s["detected"]["source_commit"] for s in sites if s.get("detected", {}).get("source_commit")]
     return {
         "built_at": datetime.date.today().isoformat(),
         "repo": repo,
-        "source_commit": commits[0] if commits else None,
+        "source_commit": git("rev-parse", "--short", "HEAD") or None,
         "library": lib,
         "sites": sites,
     }

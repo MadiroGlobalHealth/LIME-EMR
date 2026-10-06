@@ -108,7 +108,9 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font-body); f
 
   <p x-show="notice" x-cloak class="m-0 flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 text-[13px]" :class="noticeTone === 'warn' ? 'border-hold bg-hold-bg text-hold' : 'border-line bg-surface text-muted'">
     <span x-text="notice"></span>
-    <button type="button" x-show="noticeRetry" @click="loadFromGitHub(true)" class="underline">Try again</button>
+    <button type="button" x-show="noticeAction === 'allow'" @click="allowGitHub()" class="rounded-lg bg-fg px-3 py-1 text-[13px] font-semibold text-bg">Allow GitHub</button>
+    <button type="button" x-show="noticeAction === 'manage'" @click="managePermissions()" class="rounded-lg bg-fg px-3 py-1 text-[13px] font-semibold text-bg">Open permissions</button>
+    <button type="button" x-show="noticeAction === 'retry'" @click="loadFromGitHub(true)" class="underline">Try again</button>
   </p>
 
   <!-- KPIs -->
@@ -676,7 +678,7 @@ document.addEventListener("alpine:init", function () {
     return {
       cfg: CFG, lib: D.library, base: {}, files: {}, pending: {}, saveStatus: {}, view: [],
       gh: null, ghKind: "", token: "", signInOpen: false, tokenInput: "", rememberToken: false, signInError: "", signingIn: false,
-      source: "snapshot", canEdit: false, ghLogin: "", notice: "", noticeTone: "", noticeRetry: false,
+      perms: null, noticeAction: "", source: "snapshot", canEdit: false, ghLogin: "", notice: "", noticeTone: "",
       statusFilter: "all", q: "", onlyUsed: true,
       open: { time: false, reg: false, mods: false, int: false, forms: false }, openProg: {},
       pop: { kind: "", site: "", path: "", title: "", x: 0, y: 0 }, popOpen: false, drawer: null, reviewOpen: false, addOpen: false, saving: false, commitNote: "", toast: "",
@@ -712,13 +714,37 @@ document.addEventListener("alpine:init", function () {
           var mcp = await window.claude.use("mcp");
           if (!mcp) { this.setNotice("Read-only view: GitHub is not available here.", ""); return; }
           this.gh = connectorGitHub(mcp); this.ghKind = "connector";
+          this.perms = await window.claude.use("permissions");
+          var st = await this.ghPermission();
+          if (st === "prompt") { this.setNotice("This page reads and saves site profiles through your GitHub connector. Allow it to load the latest profiles and edit.", "warn", "allow"); return; }
+          if (st === "denied") { this.setNotice("GitHub is turned off for this page, so you see the snapshot and cannot edit.", "warn", "manage"); return; }
+          if (st === "unavailable") { this.setNotice("No GitHub connector is available. Add GitHub in claude.ai Settings, Connectors, then reload this page.", "warn", ""); return; }
         } else {
           this.token = readToken();
           this.gh = restGitHub(function () { return self.token; }); this.ghKind = "rest";
         }
         await this.loadFromGitHub(false);
       },
-      setNotice: function (t, tone, retry) { this.notice = t; this.noticeTone = tone || ""; this.noticeRetry = !!retry; },
+      // action: "" | "retry" | "allow" | "manage"
+      setNotice: function (t, tone, action) { this.notice = t; this.noticeTone = tone || ""; this.noticeAction = action === true ? "retry" : (action || ""); },
+      ghPermission: async function () {
+        if (!this.perms) return "granted";
+        try { return await this.perms.state("mcp:" + GH); } catch (e) { return "granted"; }
+      },
+      allowGitHub: async function () {
+        var st = "prompt";
+        if (this.perms) { try { var r = await this.perms.request(["mcp:" + GH]); st = r["mcp:" + GH] || "granted"; } catch (e) { st = "granted"; } }
+        if (st === "denied") { this.setNotice("GitHub was not allowed for this page. You can turn it on from the page's permissions.", "warn", "manage"); return; }
+        if (st === "unavailable") { this.setNotice("No GitHub connector is available. Add GitHub in claude.ai Settings, Connectors, then reload this page.", "warn", ""); return; }
+        await this.loadFromGitHub(true);
+      },
+      managePermissions: async function () {
+        if (!this.perms) return;
+        try { await this.perms.manage(); }
+        catch (e) { this.setNotice("Open the page's Permissions menu (top right of the page) and turn GitHub on, then reload.", "warn", ""); return; }
+        var st = await this.ghPermission();
+        if (st === "granted" || st === "prompt") await this.allowGitHub();
+      },
       readFile: function (path) { return this.gh.read(path); },
       profilePath: function (id) { return CFG.dir + "/" + id + ".md"; },
       loadFromGitHub: async function (userAction) {
@@ -748,8 +774,13 @@ document.addEventListener("alpine:init", function () {
           if (userAction) this.say("Loaded the latest profiles from GitHub");
         } catch (e) {
           this.source = "snapshot"; this.canEdit = false;
-          var retry = e && (e.retryable || e.code === "server_unavailable" || e.code === "upstream_error" || e.code === "network" || (e.code === "http" && e.status >= 500));
-          this.setNotice(errText(e) + " Showing the snapshot from " + (D.source_commit || "the last build") + "; editing is off.", "warn", retry);
+          var action = "";
+          if (this.ghKind === "connector") {
+            var st = await this.ghPermission();
+            action = st === "denied" || (e && e.code === "not_in_manifest") ? "manage" : (st === "prompt" || (e && (e.retryable || e.code === "upstream_error" || e.code === "consent_required"))) ? "allow" : (e && e.code === "server_unavailable") ? "retry" : "";
+          } else if (e && (e.code === "network" || (e.code === "http" && e.status >= 500))) action = "retry";
+          var msg = action === "allow" ? "GitHub access for this page is not confirmed yet." : errText(e);
+          this.setNotice(msg + " Showing the snapshot from " + (D.source_commit || "the last build") + "; editing is off.", "warn", action);
         }
       },
       openSignIn: function () { this.signInError = ""; this.tokenInput = ""; this.signInOpen = true; var self = this; this.$nextTick(function () { var el = document.getElementById("gh-token"); if (el) el.focus(); }); },
@@ -1061,6 +1092,7 @@ document.addEventListener("alpine:init", function () {
         if (!this.canEdit) {
           if (this.source === "loading") { this.say("Loading from GitHub, one moment."); return; }
           if (this.ghKind === "rest" && this.source === "github") { this.openSignIn(); return; }
+          if (this.noticeAction === "allow") { this.allowGitHub(); return; }
           this.say(this.notice || "Editing needs GitHub access."); return;
         }
         var r = ev.currentTarget.getBoundingClientRect(), w = 288, h = kind === "need" || kind === "status" ? 230 : 250;
