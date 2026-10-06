@@ -70,7 +70,7 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font-body); f
 <script id="lime-data" type="application/json">__LIME_DATA__</script>
 <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 
-<div x-data="matrix" x-init="init()" class="min-h-full px-4 pt-6 pb-28 sm:px-6">
+<div x-data="matrix" class="min-h-full px-4 pt-6 pb-28 sm:px-6">
 <div class="mx-auto grid max-w-[1600px] gap-4">
 
   <!-- Header -->
@@ -86,7 +86,13 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font-body); f
           <i class="h-2 w-2 rounded-full" :class="source === 'github' ? 'bg-on' : source === 'loading' ? 'bg-hold' : 'bg-no'"></i>
           <span x-text="sourceLabel()"></span>
         </span>
-        <button type="button" x-show="mcp" @click="loadFromGitHub(true)" :disabled="source === 'loading'" class="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2 disabled:opacity-50">Refresh</button>
+        <template x-if="ghKind === 'rest' && !token">
+          <button type="button" @click="openSignIn()" class="rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg">Sign in to GitHub to edit</button>
+        </template>
+        <template x-if="ghKind === 'rest' && token">
+          <span class="inline-flex items-center gap-2 text-[13px]"><span class="text-muted" x-text="ghLogin ? '@' + ghLogin : 'Signed in'"></span><button type="button" @click="signOut()" class="text-muted underline">Sign out</button></span>
+        </template>
+        <button type="button" x-show="gh" @click="loadFromGitHub(true)" :disabled="source === 'loading'" class="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2 disabled:opacity-50">Refresh</button>
         <button type="button" x-show="canEdit" @click="addOpen = !addOpen" class="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2">Add site</button>
       </div>
       <span class="font-mono text-[11.5px] text-muted" x-text="repoLabel()"></span>
@@ -430,7 +436,7 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font-body); f
           <p class="m-0 text-[12.5px] text-muted" x-text="'Commits that changed ' + profilePath(ds.id) + ' on ' + cfg.branch + '.'"></p>
           <p x-show="history.state === 'loading'" class="m-0 text-[13px] text-muted">Loading history…</p>
           <p x-show="history.state === 'error'" class="m-0 text-[13px] text-hold" x-text="history.error"></p>
-          <p x-show="history.state === 'none'" class="m-0 text-[13px] text-muted">History needs the GitHub connector.</p>
+          <p x-show="history.state === 'none'" class="m-0 text-[13px] text-muted">History needs GitHub access.</p>
           <ul class="m-0 grid list-none gap-1.5 p-0">
             <template x-for="c in history.items" :key="c.sha">
               <li class="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px]">
@@ -491,7 +497,29 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font-body); f
     <input id="commit-note" x-model="commitNote" placeholder="Why? (added to the commit message, optional)" class="min-w-0 flex-[1_1_240px] rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px]">
     <span class="text-[12px] text-muted" x-show="ghLogin" x-text="'Commits as @' + ghLogin"></span>
     <button type="button" @click="discardAll()" :disabled="saving" class="rounded-lg border border-line px-3 py-1.5 text-[13px] disabled:opacity-40">Discard</button>
-    <button type="submit" :disabled="saving || !canEdit" class="rounded-lg bg-new px-4 py-1.5 text-[13px] font-semibold text-surface disabled:opacity-50" x-text="saving ? 'Saving…' : 'Save to GitHub'"></button>
+    <button type="button" x-show="ghKind === 'rest' && !token" @click="openSignIn()" class="rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg">Sign in to save</button>
+    <button type="submit" x-show="!(ghKind === 'rest' && !token)" :disabled="saving || !canEdit" class="rounded-lg bg-new px-4 py-1.5 text-[13px] font-semibold text-surface disabled:opacity-50" x-text="saving ? 'Saving…' : 'Save to GitHub'"></button>
+  </form>
+</div>
+
+<!-- GitHub sign-in (standalone page) -->
+<div x-show="signInOpen" x-cloak class="fixed inset-0 z-[55] bg-shade" @click="signInOpen = false"></div>
+<div x-show="signInOpen" x-cloak @keydown.escape.window="signInOpen = false" role="dialog" aria-labelledby="signin-title"
+  class="fixed left-1/2 top-[max(5vh,env(safe-area-inset-top))] z-[56] grid max-h-[90vh] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 gap-3 overflow-y-auto rounded-xl border border-line bg-surface p-5 shadow-2xl">
+  <h2 id="signin-title" class="m-0 font-display text-[22px] font-extrabold leading-none [font-stretch:80%]">Sign in to GitHub</h2>
+  <p class="m-0 text-[13px] text-muted">Your changes are saved as commits by your GitHub account, so the history shows who changed what. The page talks to GitHub directly with a personal access token. It is kept in this browser only and sent only to api.github.com.</p>
+  <ol class="m-0 grid gap-1.5 pl-5 text-[13px]">
+    <li><a class="font-semibold text-todo underline" target="_blank" rel="noopener" :href="'https://github.com/settings/personal-access-tokens/new?name=' + encodeURIComponent('LIME Site Matrix') + '&description=' + encodeURIComponent('Edit site profiles in ' + cfg.owner + '/' + cfg.repo) + '&target_name=' + encodeURIComponent(cfg.owner) + '&contents=write'">Create a fine-grained token</a> on GitHub.</li>
+    <li>Resource owner: <b x-text="cfg.owner"></b>. Repository access: only <b x-text="cfg.repo"></b>.</li>
+    <li>Repository permissions: <b>Contents: Read and write</b>. Nothing else is needed.</li>
+    <li>Generate the token and paste it below.</li>
+  </ol>
+  <form class="grid gap-2" @submit.prevent="signIn()">
+    <label for="gh-token" class="text-[12px] text-muted">Personal access token</label>
+    <input id="gh-token" type="password" autocomplete="off" spellcheck="false" x-model="tokenInput" placeholder="github_pat_…" class="rounded-lg border border-line bg-surface px-2.5 py-1.5 font-mono text-[13px]">
+    <label class="inline-flex items-center gap-2 text-[13px]"><input id="gh-remember" type="checkbox" x-model="rememberToken"> Remember on this device (otherwise until you close the tab)</label>
+    <p x-show="signInError" class="m-0 text-[12.5px] text-crit" x-text="signInError"></p>
+    <div class="flex gap-2"><button type="submit" :disabled="signingIn || !tokenInput.trim()" class="rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg disabled:opacity-50" x-text="signingIn ? 'Checking…' : 'Sign in'"></button><button type="button" @click="signInOpen = false" class="rounded-lg border border-line px-3 py-1.5 text-[13px]">Cancel</button></div>
   </form>
 </div>
 
@@ -574,6 +602,14 @@ document.addEventListener("alpine:init", function () {
   }
   function errText(e) {
     var c = e && e.code;
+    if (c === "http") {
+      if (e.status === 401) return "GitHub did not accept your token: it may have expired. Sign in again.";
+      if (e.status === 403) return /rate limit/i.test(e.message || "") ? "GitHub's hourly limit for anonymous reads was reached. Sign in to raise it." : "Your GitHub account or token cannot write to " + CFG.owner + "/" + CFG.repo + ".";
+      if (e.status === 404) return "Not found on GitHub, or your token cannot see this repository.";
+      if (e.status === 409 || e.status === 422) return "Someone saved this profile at the same time. Refresh, then save again.";
+      return "GitHub answered " + e.status + ": " + (e.message || "").slice(0, 140);
+    }
+    if (c === "network") return "Could not reach GitHub. Check your connection.";
     if (c === "server_not_connected") return "Add the GitHub connector in claude.ai Settings → Connectors to edit and save.";
     if (c === "needs_reauth") return "Reconnect GitHub in claude.ai Settings → Connectors.";
     if (c === "selection_required") return "Choose which GitHub connection this page should use, then reload.";
@@ -583,6 +619,51 @@ document.addEventListener("alpine:init", function () {
     if (c === "server_unavailable" || c === "rate_limited") return "GitHub did not answer in time.";
     return "GitHub error: " + ((e && e.message) || c || "unknown").slice(0, 160);
   }
+
+  // ---- GitHub access. Two routes with the same interface:
+  //  connector: inside Claude, through the viewer's GitHub connector (the frame allows no other network calls)
+  //  rest:      anywhere else (GitHub Pages, a local file), straight to api.github.com with the viewer's token
+  function connectorGitHub(mcp) {
+    var call = function (tool, input) { return mcp.callTool(GH, tool, input, { cache: false }); };
+    var repo = { owner: CFG.owner, repo: CFG.repo };
+    return {
+      kind: "connector",
+      read: async function (path) { var f = fileFromResult(await call("get_file_contents", Object.assign({ path: path, ref: "refs/heads/" + CFG.branch }, repo))); if (!f) throw { code: "tool_error", message: "Empty file" }; return f; },
+      list: async function (dir) { var r = await call("get_file_contents", Object.assign({ path: dir, ref: "refs/heads/" + CFG.branch, fields: ["name", "path", "type"] }, repo)); return Array.isArray(r.payload) ? r.payload : []; },
+      write: async function (path, content, message, sha) { var input = Object.assign({ path: path, branch: CFG.branch, content: content, message: message }, repo); if (sha) input.sha = sha; await call("create_or_update_file", input); return null; },
+      commits: async function (path, n) { var r = await call("list_commits", Object.assign({ sha: CFG.branch, path: path, perPage: n, fields: ["sha", "html_url", "commit", "author"] }, repo)); return Array.isArray(r.payload) ? r.payload : []; },
+      me: async function () { var r = await call("get_me", {}); return (r.payload && r.payload.login) || ""; },
+      canPush: async function () { return true; }
+    };
+  }
+  function b64decode(b64) { var bin = atob(b64.replace(/\s/g, "")), bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+  function b64encode(text) { var bytes = new TextEncoder().encode(text), bin = ""; for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+  function restGitHub(getToken) {
+    var api = "https://api.github.com/repos/" + CFG.owner + "/" + CFG.repo;
+    var enc = function (path) { return path.split("/").map(encodeURIComponent).join("/"); };
+    async function req(method, url, body) {
+      var h = { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, t = getToken();
+      if (t) h.Authorization = "Bearer " + t;
+      if (body) h["Content-Type"] = "application/json";
+      var r;
+      try { r = await fetch(url, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: "no-store" }); }
+      catch (e) { throw { code: "network", message: String(e) }; }
+      var data = null; try { data = await r.json(); } catch (e) {}
+      if (!r.ok) throw { code: "http", status: r.status, message: (data && data.message) || r.statusText };
+      return data;
+    }
+    return {
+      kind: "rest",
+      read: async function (path) { var d = await req("GET", api + "/contents/" + enc(path) + "?ref=" + encodeURIComponent(CFG.branch)); return { sha: d.sha, text: b64decode(d.content || "") }; },
+      list: async function (dir) { var d = await req("GET", api + "/contents/" + enc(dir) + "?ref=" + encodeURIComponent(CFG.branch)); return Array.isArray(d) ? d : []; },
+      write: async function (path, content, message, sha) { var body = { message: message, content: b64encode(content), branch: CFG.branch }; if (sha) body.sha = sha; var d = await req("PUT", api + "/contents/" + enc(path), body); return (d && d.commit && d.commit.sha) || null; },
+      commits: async function (path, n) { var d = await req("GET", api + "/commits?sha=" + encodeURIComponent(CFG.branch) + "&path=" + encodeURIComponent(path) + "&per_page=" + n); return Array.isArray(d) ? d : []; },
+      me: async function () { var d = await req("GET", "https://api.github.com/user"); return (d && d.login) || ""; },
+      canPush: async function () { var d = await req("GET", api); return !!(d && d.permissions && d.permissions.push); }
+    };
+  }
+  var TOKEN_KEY = "lime-site-matrix-github-token";
+  function readToken() { try { return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } }
 
   var libForms = [], libByCode = {};
   function setLibrary(lib) {
@@ -594,7 +675,8 @@ document.addEventListener("alpine:init", function () {
   Alpine.data("matrix", function () {
     return {
       cfg: CFG, lib: D.library, base: {}, files: {}, pending: {}, saveStatus: {}, view: [],
-      mcp: null, source: "snapshot", canEdit: false, ghLogin: "", notice: "", noticeTone: "", noticeRetry: false,
+      gh: null, ghKind: "", token: "", signInOpen: false, tokenInput: "", rememberToken: false, signInError: "", signingIn: false,
+      source: "snapshot", canEdit: false, ghLogin: "", notice: "", noticeTone: "", noticeRetry: false,
       statusFilter: "all", q: "", onlyUsed: true,
       open: { time: false, reg: false, mods: false, int: false, forms: false }, openProg: {},
       pop: { kind: "", site: "", path: "", title: "", x: 0, y: 0 }, popOpen: false, drawer: null, reviewOpen: false, addOpen: false, saving: false, commitNote: "", toast: "",
@@ -625,24 +707,26 @@ document.addEventListener("alpine:init", function () {
 
       // ------------------------------------------------ GitHub
       connect: async function () {
-        if (!window.claude || !window.claude.use) { this.setNotice("Read-only copy. Open the shared Claude page to edit.", ""); return; }
-        this.mcp = await window.claude.use("mcp");
-        if (!this.mcp) { this.setNotice("Read-only view: GitHub is not available here.", ""); return; }
+        var self = this;
+        if (window.claude && window.claude.use) {
+          var mcp = await window.claude.use("mcp");
+          if (!mcp) { this.setNotice("Read-only view: GitHub is not available here.", ""); return; }
+          this.gh = connectorGitHub(mcp); this.ghKind = "connector";
+        } else {
+          this.token = readToken();
+          this.gh = restGitHub(function () { return self.token; }); this.ghKind = "rest";
+        }
         await this.loadFromGitHub(false);
       },
       setNotice: function (t, tone, retry) { this.notice = t; this.noticeTone = tone || ""; this.noticeRetry = !!retry; },
-      call: function (tool, input, fresh) { return this.mcp.callTool(GH, tool, input, fresh ? { cache: false } : undefined); },
-      readFile: async function (path) {
-        var res = await this.call("get_file_contents", { owner: CFG.owner, repo: CFG.repo, path: path, ref: "refs/heads/" + CFG.branch }, true);
-        return fileFromResult(res);
-      },
+      readFile: function (path) { return this.gh.read(path); },
       profilePath: function (id) { return CFG.dir + "/" + id + ".md"; },
       loadFromGitHub: async function (userAction) {
         var self = this;
+        if (!this.gh) return;
         this.source = "loading";
         try {
-          var listing = await this.call("get_file_contents", { owner: CFG.owner, repo: CFG.repo, path: CFG.dir, ref: "refs/heads/" + CFG.branch, fields: ["name", "path", "type"] }, true);
-          var entries = Array.isArray(listing.payload) ? listing.payload : [];
+          var entries = await this.gh.list(CFG.dir);
           var ids = entries.filter(function (e) { return e.type === "file" && /\.md$/.test(e.name); }).map(function (e) { return e.name.replace(/\.md$/, ""); });
           var libFile = null;
           try { libFile = await this.readFile(CFG.library); } catch (e) {}
@@ -656,16 +740,38 @@ document.addEventListener("alpine:init", function () {
             base[r[0]] = p.meta; files[r[0]] = { sha: r[1].sha, body: p.body, text: r[1].text };
           });
           this.base = base; this.files = files;
-          this.source = "github"; this.canEdit = true;
+          this.source = "github";
+          this.canEdit = this.ghKind === "connector" || !!this.token;
           this.setNotice(failed ? failed + " profile(s) could not be read from GitHub; showing the snapshot for those." : "", failed ? "warn" : "");
           this.recompute();
-          if (!this.ghLogin) this.call("get_me", {}).then(function (r) { self.ghLogin = (r.payload && r.payload.login) || ""; }, function () {});
+          if (!this.ghLogin && this.canEdit) this.gh.me().then(function (l) { self.ghLogin = l; }, function () {});
           if (userAction) this.say("Loaded the latest profiles from GitHub");
         } catch (e) {
           this.source = "snapshot"; this.canEdit = false;
-          var retry = e && (e.retryable || e.code === "server_unavailable" || e.code === "upstream_error");
+          var retry = e && (e.retryable || e.code === "server_unavailable" || e.code === "upstream_error" || e.code === "network" || (e.code === "http" && e.status >= 500));
           this.setNotice(errText(e) + " Showing the snapshot from " + (D.source_commit || "the last build") + "; editing is off.", "warn", retry);
         }
+      },
+      openSignIn: function () { this.signInError = ""; this.tokenInput = ""; this.signInOpen = true; var self = this; this.$nextTick(function () { var el = document.getElementById("gh-token"); if (el) el.focus(); }); },
+      signIn: async function () {
+        var t = this.tokenInput.trim(); if (!t) return;
+        var self = this, prev = this.token;
+        this.signingIn = true; this.signInError = ""; this.token = t;
+        try {
+          var login = await this.gh.me();
+          var push = false; try { push = await this.gh.canPush(); } catch (e) {}
+          if (!push) { this.token = prev; this.signInError = "Signed in as @" + login + ", but this account or token cannot write to " + CFG.owner + "/" + CFG.repo + ". Give the token Contents: Read and write on that repository."; return; }
+          try { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); (this.rememberToken ? localStorage : sessionStorage).setItem(TOKEN_KEY, t); } catch (e) {}
+          this.ghLogin = login; this.signInOpen = false; this.tokenInput = "";
+          if (this.source !== "github") await this.loadFromGitHub(false); else this.canEdit = true;
+          this.say("Signed in to GitHub as @" + esc(login) + ". Your saves will be commits by this account.");
+        } catch (e) { this.token = prev; this.signInError = errText(e); }
+        finally { this.signingIn = false; }
+      },
+      signOut: function () {
+        try { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+        this.token = ""; this.ghLogin = ""; this.canEdit = false;
+        this.say("Signed out. Unsaved changes are kept in this browser.");
       },
       sourceLabel: function () { return this.source === "github" ? "Live from GitHub" : this.source === "loading" ? "Loading from GitHub…" : "Snapshot " + (D.source_commit || ""); },
       sourceTitle: function () { return this.source === "github" ? "Profiles read from " + this.repoLabel() : "Embedded copy built " + D.built_at; },
@@ -704,10 +810,9 @@ document.addEventListener("alpine:init", function () {
         this.applyChanges(meta, changes);
         var text = renderProfile(meta, body);
         if (remote && text === remote.text) { this.afterSave(id, meta, body, remote); return null; }
-        var input = { owner: CFG.owner, repo: CFG.repo, path: path, branch: CFG.branch, content: text, message: this.commitMessage(id, changes) };
-        if (remote && remote.sha) input.sha = remote.sha;
+        var commitSha = null;
         try {
-          await this.call("create_or_update_file", input);
+          commitSha = await this.gh.write(path, text, this.commitMessage(id, changes), remote && remote.sha);
         } catch (e) {
           // An unanswered write may still have landed: compare with what GitHub has now.
           var now = null; try { now = await this.readFile(path); } catch (e2) {}
@@ -715,10 +820,8 @@ document.addEventListener("alpine:init", function () {
         }
         var fresh = null; try { fresh = await this.readFile(path); } catch (e) {}
         this.afterSave(id, meta, body, fresh || { text: text, sha: null });
-        try {
-          var log = await this.call("list_commits", { owner: CFG.owner, repo: CFG.repo, sha: CFG.branch, path: path, perPage: 1, fields: ["sha"] }, true);
-          return (Array.isArray(log.payload) && log.payload[0] && log.payload[0].sha) || null;
-        } catch (e) { return null; }
+        if (commitSha) return commitSha;
+        try { var log = await this.gh.commits(path, 1); return (log[0] && log[0].sha) || null; } catch (e) { return null; }
       },
       afterSave: function (id, meta, body, file) {
         this.base[id] = meta; this.files[id] = { sha: file.sha, body: body, text: file.text };
@@ -743,11 +846,10 @@ document.addEventListener("alpine:init", function () {
         return lines.join("\n");
       },
       loadHistory: async function (id) {
-        if (!this.mcp || this.source !== "github") { this.history = { state: "none", items: [], error: "" }; return; }
+        if (!this.gh) { this.history = { state: "none", items: [], error: "" }; return; }
         this.history = { state: "loading", items: [], error: "" };
         try {
-          var r = await this.call("list_commits", { owner: CFG.owner, repo: CFG.repo, sha: CFG.branch, path: this.profilePath(id), perPage: 20, fields: ["sha", "html_url", "commit", "author"] }, true);
-          var items = (Array.isArray(r.payload) ? r.payload : []).map(function (c) {
+          var items = (await this.gh.commits(this.profilePath(id), 20)).map(function (c) {
             var ca = (c.commit && c.commit.author) || {};
             var d = ca.date ? new Date(ca.date) : null;
             return { sha: c.sha, url: c.html_url, title: ((c.commit && c.commit.message) || "").split("\n")[0], who: c.author && c.author.login ? "@" + c.author.login : (ca.name || "Unknown"), when: d ? d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") : "" };
@@ -956,7 +1058,11 @@ document.addEventListener("alpine:init", function () {
       openSite: function (id) { this.copySrc = ""; this.drawer = { site: id, tab: "overview" }; this.history = { state: "idle", items: [], error: "" }; },
       setTab: function (t) { this.drawer.tab = t; if (t === "history") this.loadHistory(this.drawer.site); },
       edit: function (ev, site, kind, path, title, prog, form) {
-        if (!this.canEdit) { this.say(this.source === "loading" ? "Loading from GitHub, one moment." : "Editing needs the GitHub connector. " + (this.notice || "")); return; }
+        if (!this.canEdit) {
+          if (this.source === "loading") { this.say("Loading from GitHub, one moment."); return; }
+          if (this.ghKind === "rest" && this.source === "github") { this.openSignIn(); return; }
+          this.say(this.notice || "Editing needs GitHub access."); return;
+        }
         var r = ev.currentTarget.getBoundingClientRect(), w = 288, h = kind === "need" || kind === "status" ? 230 : 250;
         var x = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)), y = r.bottom + 6;
         if (y + h > window.innerHeight) y = Math.max(8, r.top - h - 6);

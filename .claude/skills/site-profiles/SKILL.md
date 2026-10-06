@@ -80,8 +80,11 @@ page (site panel, History tab) and in `git log docs/site-matrix/profiles/<site>.
 3. The page URL is recorded in `docs/site-matrix/README.md` under "Shared page". Republish to that
    URL (pass it as `url`) so the link stays the same. Republish only when the template, the branch or
    the embedded snapshot needs to change; profile edits do not need a republish.
-4. Editors need the GitHub connector in claude.ai and write access to the repository. Without it the
-   page is read-only and shows the snapshot embedded at build time.
+4. Editors need write access to the repository. Inside Claude the page saves through the viewer's
+   GitHub connector. The same page opened standalone (`docs/site-matrix/index.html` on GitHub Pages
+   or locally) reads the profiles anonymously from api.github.com and saves with a fine-grained
+   personal access token the viewer pastes in ("Sign in to GitHub"; repository LIME-EMR only,
+   Contents: Read and write). The token stays in that browser. Without access the page is read-only.
 
 ## 4. Review changes made in the page
 
