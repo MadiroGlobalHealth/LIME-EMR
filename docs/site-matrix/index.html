@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LIME Site Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: header + portfolio strip, then one scrolling matrix (config rows x site columns) with sticky site headers and row labels. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --fg: #142030;
+  --muted: #5a6879;
+  --line: #d9dfe6;
+  --accent: #b3202a;
+  --on: #1d7a52;      --on-bg: #dcf1e6;
+  --plan: #2a5db0;    --plan-bg: #e2ebfa;
+  --hold: #a3620a;    --hold-bg: #fbecd2;
+  --no: #8a96a3;
+  --new: #7a3db8;     --new-bg: #efe5fa;
+  --crit: #c2410c;
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #161e27; --surface-2: #1b2530; --fg: #e4eaf0; --muted: #94a3b3; --line: #2a3644;
+    --accent: #ef5a5f;
+    --on: #5fd19b; --on-bg: #143526; --plan: #82aef5; --plan-bg: #172a47; --hold: #f0b45a; --hold-bg: #3a2a10;
+    --no: #66758a; --new: #c49af0; --new-bg: #2c1d40; --crit: #fb8a4c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #161e27; --surface-2: #1b2530; --fg: #e4eaf0; --muted: #94a3b3; --line: #2a3644;
+  --accent: #ef5a5f;
+  --on: #5fd19b; --on-bg: #143526; --plan: #82aef5; --plan-bg: #172a47; --hold: #f0b45a; --hold-bg: #3a2a10;
+  --no: #66758a; --new: #c49af0; --new-bg: #2c1d40; --crit: #fb8a4c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.45;
+  padding: 24px 16px 40px;
+}
+.wrap { max-width: 1600px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.brand { display: grid; gap: 4px; min-width: 0; }
+.eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.eyebrow b { color: var(--accent); font-weight: 700; }
+h1 { font-family: var(--font-display); font-stretch: 78%; font-weight: 800; font-size: clamp(28px, 4vw, 40px); line-height: 1; letter-spacing: -.01em; }
+.sub { color: var(--muted); max-width: 70ch; }
+.asof { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+/* Portfolio strip */
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stat { background: var(--surface); padding: 12px 14px; display: grid; gap: 2px; align-content: start; }
+.stat .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.stat .v { font-family: var(--font-display); font-stretch: 80%; font-weight: 700; font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .d { font-size: 12px; color: var(--muted); }
+.stat .v small { font-size: 14px; font-weight: 500; color: var(--muted); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: none; padding: 6px 12px; cursor: pointer; font-size: 13px; border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.search { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; min-width: 0; flex: 1 1 200px; max-width: 320px; }
+.search input { border: 0; background: none; padding: 7px 0; outline: none; width: 100%; min-width: 0; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.btn:hover, .seg button:hover:not([aria-pressed="true"]) { background: var(--surface-2); }
+
+/* Legend */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--muted); align-items: center; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* State marks */
+.m { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+.m.on { background: var(--on-bg); color: var(--on); }
+.m.plan { background: var(--plan-bg); color: var(--plan); box-shadow: inset 0 0 0 1px currentColor; background-image: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, currentColor 14%, transparent) 4px 6px); }
+.m.hold { background: var(--hold-bg); color: var(--hold); }
+.m.no { color: var(--no); font-weight: 400; }
+.m.unk { color: var(--no); opacity: .6; font-weight: 400; }
+.tag-new { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--new); background: var(--new-bg); border-radius: 3px; padding: 1px 5px; vertical-align: 1px; }
+.sync { display: inline-block; margin-left: 4px; font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--accent); border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; line-height: 14px; vertical-align: 1px; }
+.sync.stg { border-style: dashed; color: var(--muted); font-weight: 600; }
+.wf { display: grid; gap: 2px; }
+.wf .st { font-size: 11.5px; font-weight: 600; }
+.wf .st.on { color: var(--on); }
+.wf .st.off { color: var(--no); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.live { color: var(--on); background: var(--on-bg); }
+.pill.preparation { color: var(--hold); background: var(--hold-bg); }
+.pill.planned { color: var(--plan); background: var(--plan-bg); }
+
+/* Matrix */
+.matrix-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: calc(100vh - 140px); min-height: 360px; }
+table { border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--line); padding: 7px 10px; vertical-align: top; text-align: left; }
+thead th { position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 2px solid var(--fg); vertical-align: bottom; }
+.lab { position: sticky; left: 0; z-index: 2; background: var(--surface); width: 280px; min-width: 240px; max-width: 280px; border-right: 1px solid var(--line); }
+thead .lab { z-index: 4; }
+.use { width: 92px; min-width: 92px; border-right: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.sitecol { width: 168px; min-width: 168px; max-width: 200px; border-right: 1px solid var(--line); }
+td.sitecol { font-size: 13px; }
+td.c { text-align: center; vertical-align: middle; }
+.sitehead { display: grid; gap: 4px; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; width: 100%; }
+.sitehead .n { font-family: var(--font-display); font-stretch: 82%; font-weight: 700; font-size: 17px; line-height: 1.1; }
+.sitehead .cty { font-size: 12px; color: var(--muted); }
+.sitehead .ph { font-size: 11.5px; color: var(--muted); line-height: 1.3; font-weight: 400; }
+.sitehead .reuse { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+.sitehead:hover .n { text-decoration: underline; text-underline-offset: 3px; }
+.corner { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+tr.sec th { position: sticky; left: 0; background: var(--surface-2); padding: 0; border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); }
+tr.sec button { all: unset; box-sizing: border-box; cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 12px; width: 100%; }
+tr.sec button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+tr.sec .t { font-family: var(--font-display); font-stretch: 85%; font-weight: 700; font-size: 15px; letter-spacing: .01em; }
+tr.sec .ct { font-size: 12px; color: var(--muted); }
+tr.sec .chev { display: inline-block; transition: transform .15s; color: var(--muted); }
+tr.sec[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+tr.sec td { background: var(--surface-2); }
+
+tr.prog .lab { font-weight: 600; background: var(--surface); }
+tr.prog .lab button { all: unset; cursor: pointer; display: inline-flex; gap: 8px; align-items: baseline; }
+tr.prog .lab button:focus-visible { outline: 2px solid var(--accent); }
+tr.prog .chev { color: var(--muted); display: inline-block; transition: transform .15s; font-size: 11px; }
+tr.prog[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+tr.prog td, tr.prog th { border-bottom-color: var(--line); background: var(--surface); }
+tr.form .lab { padding-left: 30px; }
+.code { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin-right: 6px; }
+.fname { font-size: 13px; }
+.note-dot { color: var(--muted); cursor: help; font-size: 11px; margin-left: 3px; }
+.rowlabel { display: block; font-weight: 600; font-size: 13px; }
+.rowhint { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+.idv { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+.idx { color: var(--muted); font-size: 11.5px; display: block; }
+.muted { color: var(--muted); }
+.tbd { color: var(--no); font-style: italic; font-size: 12px; }
+.date { display: grid; gap: 1px; }
+.date .dv { font-weight: 600; }
+.date .rel { font-size: 11.5px; color: var(--muted); }
+.date .rel.late { color: var(--crit); font-weight: 600; }
+.date .rel.soon { color: var(--hold); font-weight: 600; }
+.date .rel.done { color: var(--on); }
+.bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--surface-2); margin-top: 4px; width: 64px; }
+.bar i { display: block; height: 100%; }
+.bar .b-on { background: var(--on); }
+.bar .b-plan { background: var(--plan); }
+.usetxt { font-size: 12px; font-variant-numeric: tabular-nums; }
+tr.hl td { background: color-mix(in srgb, var(--plan-bg) 40%, var(--surface)); }
+tbody tr:hover td, tbody tr:hover th.lab { background: var(--surface-2); }
+.empty { padding: 28px; color: var(--muted); }
+
+/* Site panel */
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--fg); padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); }
+dialog::backdrop { background: rgb(10 15 20 / .45); }
+.dlg { padding: 20px 22px; display: grid; gap: 14px; }
+.dlg header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.dlg h2 { font-family: var(--font-display); font-stretch: 80%; font-weight: 800; font-size: 26px; line-height: 1.05; }
+.dlg h3 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.dlg ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.dlg dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
+.dlg dt { color: var(--muted); }
+.dlg dd { margin: 0; min-width: 0; }
+.x { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: none; }
+footer { color: var(--muted); font-size: 12px; display: grid; gap: 4px; }
+footer code { font-family: var(--font-mono); font-size: 11.5px; }
+
+@media (max-width: 640px) {
+  .lab { width: 170px; min-width: 170px; max-width: 170px; }
+  tr.form .lab { padding-left: 16px; }
+  .use { display: none; }
+  .sitecol { width: 140px; min-width: 140px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow"><b>LIME EMR</b> · MSF OCG implementations</span>
+      <h1>Site Matrix</h1>
+      <p class="sub">Configuration of every LIME EMR site side by side: patient ID and registration, modules, forms in use, DHIS2 integration, status and key milestones. Use it to track implementation progress and how much of the shared form library each site reuses.</p>
+    </div>
+    <div class="asof" id="asof"></div>
+  </header>
+
+  <section class="strip" id="strip" aria-label="Portfolio summary"></section>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Filter sites by status" id="statusSeg">
+      <button type="button" data-s="all" aria-pressed="true">All sites</button>
+      <button type="button" data-s="live" aria-pressed="false">Live</button>
+      <button type="button" data-s="preparation" aria-pressed="false">Preparation</button>
+      <button type="button" data-s="planned" aria-pressed="false">Planned</button>
+    </div>
+    <label class="search" for="q"><span class="muted" aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Find a form, program or code"></label>
+    <label class="check" for="hideUnused"><input id="hideUnused" type="checkbox"> Hide forms no visible site uses</label>
+    <button class="btn" type="button" id="toggleProgs">Collapse programs</button>
+  </div>
+
+  <div class="legend" aria-label="Legend">
+    <span><i class="m on">On</i> Enabled in site build</span>
+    <span><i class="m plan">Plan</i> Planned</span>
+    <span><i class="m hold">Hold</i> On hold</span>
+    <span><i class="m no">–</i> Not needed</span>
+    <span><i class="m unk">·</i> Not assessed</span>
+    <span><i class="sync">D2</i> Synced to DHIS2 via OpenFn</span>
+    <span><i class="sync stg">D2</i> Mapped in staging only</span>
+    <span><i class="tag-new">New</i> Site-specific, not from the shared library</span>
+  </div>
+
+  <div class="matrix-box" id="box"><table id="matrix"></table></div>
+
+  <footer>
+    <span>Reuse rate = shared library forms ÷ all forms enabled or planned at the site. "Sites" column counts sites (in the current filter) with the form enabled or planned.</span>
+    <span>Data lives in <code>docs/site-matrix/sites-data.js</code>. Form lists for live sites come from each site's <code>pom.xml</code>; IDs, address and registration fields from <code>sites/&lt;site&gt;/configs</code>; DHIS2 sync from <code>sites/&lt;site&gt;/configs/openfn</code> (project YAML, triggers and changelog).</span>
+  </footer>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle"><div class="dlg" id="dlgBody"></div></dialog>
+
+<script src="sites-data.js"></script>
+<script>
+(function () {
+  "use strict";
+  var D = window.LIME_MATRIX;
+  var TODAY = new Date(); TODAY.setHours(0, 0, 0, 0);
+  var STATE_LABEL = { on: "On", plan: "Plan", hold: "Hold", no: "–" };
+  var STATE_NAME = { on: "Enabled", plan: "Planned", hold: "On hold", no: "Not needed" };
+  var STATUS_ORDER = { live: 0, preparation: 1, planned: 2 };
+  var MILESTONES = [
+    ["requirements", "Requirements complete", "Activities, forms and metadata signed off"],
+    ["uat", "UAT ready", "Test server available to users"],
+    ["prod", "Production target", "Planned go-live"],
+    ["live", "Live since", "Actual go-live"],
+    ["handover", "Handover / closure", "Project handover or decommission"]
+  ];
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  // Expand "F29-F34" into F29..F34
+  function expand(list) {
+    var out = [];
+    (list || []).forEach(function (x) {
+      var m = /^F(\d+)-F(\d+)$/.exec(x);
+      if (m) { for (var i = +m[1]; i <= +m[2]; i++) out.push("F" + (i < 10 ? "0" : "") + i); }
+      else out.push(x);
+    });
+    return out;
+  }
+
+  // Normalise library and per-site form states
+  var library = D.library.map(function (r) { return { code: r[0], name: r[1], program: r[2], inLibrary: r[3] !== false }; });
+  var libCodes = {}; library.forEach(function (f) { libCodes[f.code] = f; });
+  D.sites.forEach(function (s) {
+    s.formState = {};
+    if (s.formsDefault) library.forEach(function (f) { if (f.inLibrary) s.formState[f.code] = s.formsDefault; });
+    ["on", "plan", "hold", "no"].forEach(function (st) { expand(s.forms && s.forms[st]).forEach(function (c) { s.formState[c] = st; }); });
+    (s.customForms || []).forEach(function (cf) { s.formState[cf.code] = cf.state; });
+    s.formNotes = s.formNotes || {};
+    s.integration = s.integration || {};
+    s.sync = {};
+    expand(s.integration.staging).forEach(function (c) { s.sync[c] = "staging"; });
+    expand(s.integration.synced).forEach(function (c) { s.sync[c] = "live"; });
+    s.modules = s.modules || {}; s.milestones = s.milestones || {}; s.registration = s.registration || {};
+    var lib = 0, neu = 0, active = 0;
+    Object.keys(s.formState).forEach(function (c) {
+      var st = s.formState[c];
+      if (st !== "on" && st !== "plan") return;
+      active++;
+      if (libCodes[c] && libCodes[c].inLibrary) lib++; else neu++;
+    });
+    if (s.registration.isNew) neu++;
+    s.stats = { active: active, lib: lib, neu: neu, reuse: (lib + neu) ? Math.round(100 * lib / (lib + neu)) : null };
+  });
+
+  // All form rows (library + site-specific), grouped by program
+  var rows = library.slice();
+  D.sites.forEach(function (s) { (s.customForms || []).forEach(function (cf) { rows.push({ code: cf.code, name: cf.name, program: cf.program, custom: true, owner: s.name, note: cf.note }); }); });
+  var programs = {};
+  rows.forEach(function (r) { (programs[r.program] = programs[r.program] || []).push(r); });
+  var programNames = Object.keys(programs).sort(function (a, b) {
+    if (a === "Other") return 1; if (b === "Other") return -1; return a.localeCompare(b);
+  });
+
+  // UI state (per-viewer convenience only)
+  var ui = { status: "all", q: "", hideUnused: false, collapsedSec: {}, collapsedProg: {} };
+  try { var saved = JSON.parse(localStorage.getItem("lime-site-matrix") || "null"); if (saved) { ui.status = saved.status || "all"; ui.hideUnused = !!saved.hideUnused; ui.collapsedSec = saved.collapsedSec || {}; ui.collapsedProg = saved.collapsedProg || {}; } } catch (e) {}
+  function persist() { try { localStorage.setItem("lime-site-matrix", JSON.stringify({ status: ui.status, hideUnused: ui.hideUnused, collapsedSec: ui.collapsedSec, collapsedProg: ui.collapsedProg })); } catch (e) {} }
+
+  function visibleSites() {
+    return D.sites.filter(function (s) { return ui.status === "all" || s.status === ui.status; })
+      .sort(function (a, b) { return STATUS_ORDER[a.status] - STATUS_ORDER[b.status]; });
+  }
+
+  function mark(st, title) {
+    if (!st) return '<span class="m unk" title="Not assessed">·</span>';
+    return '<span class="m ' + st + '" title="' + esc(title || STATE_NAME[st]) + '">' + STATE_LABEL[st] + "</span>";
+  }
+
+  function parseD(d) {
+    if (!d) return null;
+    var p = d.split("-");
+    return { date: new Date(+p[0], p[1] ? +p[1] - 1 : 0, p[2] ? +p[2] : 1), prec: p.length };
+  }
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function fmtD(pd) {
+    var d = pd.date;
+    if (pd.prec === 1) return String(d.getFullYear());
+    if (pd.prec === 2) return MON[d.getMonth()] + " " + d.getFullYear();
+    return d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear();
+  }
+  function milestoneCell(m) {
+    if (!m) return '<span class="m unk" title="No date set">·</span>';
+    var pd = parseD(m.d);
+    var note = m.note ? ' title="' + esc(m.note) + '"' : "";
+    if (!pd) return '<span class="tbd"' + note + ">" + (m.done ? "Done, date TBC" : "Date TBC") + (m.note ? ' <span class="note-dot">ⓘ</span>' : "") + "</span>";
+    var rel = "";
+    if (m.done) rel = '<span class="rel done">Done</span>';
+    else if (pd.prec === 3) {
+      var days = Math.round((pd.date - TODAY) / 864e5);
+      if (days < 0) rel = '<span class="rel late">Overdue by ' + (-days) + " d</span>";
+      else if (days === 0) rel = '<span class="rel soon">Today</span>';
+      else rel = '<span class="rel' + (days <= 14 ? " soon" : "") + '">In ' + days + " d</span>";
+    } else rel = '<span class="rel">Target</span>';
+    return '<span class="date"' + note + '><span class="dv">' + (m.approx ? "≈ " : "") + fmtD(pd) + (m.note ? ' <span class="note-dot">ⓘ</span>' : "") + "</span>" + rel + "</span>";
+  }
+
+  var INT_STATUS = {
+    live: ["on", "Live", "Production workflow enabled"],
+    staging: ["plan", "Staging", "Configured in staging only"],
+    template: ["hold", "Template", "Config copied from another site, not adapted or triggers off"],
+    planned: ["plan", "Planned", "Integration planned"]
+  };
+  function syncBadge(s, code) {
+    var v = s.sync[code];
+    if (v === "live") return '<span class="sync" title="Synced to DHIS2 by the production OpenFn workflow">D2</span>';
+    if (v === "staging") return '<span class="sync stg" title="Mapped in the staging OpenFn project only">D2</span>';
+    return "";
+  }
+  function wfCell(s, k) {
+    var i = s.integration, w = i.workflows && i.workflows[k];
+    if (!w) return i.status ? '<span class="muted">–</span>' : '<span class="m unk">·</span>';
+    return '<span class="wf"><span class="st ' + (w.enabled ? "on" : "off") + '">' + (w.enabled ? "Enabled" : "Disabled") + (w.staging ? " · staging" : "") + '</span><span class="muted" style="font-size:11.5px">' + esc(w.schedule) + " UTC</span></span>";
+  }
+
+  function textCell(v, empty) { return v ? esc(v) : '<span class="tbd">' + (empty || "To define") + "</span>"; }
+
+  function usage(code, sites) {
+    var on = 0, plan = 0;
+    sites.forEach(function (s) { var st = s.formState[code]; if (st === "on") on++; else if (st === "plan") plan++; });
+    return { on: on, plan: plan };
+  }
+  function useCell(u, n) {
+    if (!n) return "";
+    var w = 64;
+    return '<span class="usetxt">' + (u.on + u.plan) + " / " + n + '</span><span class="bar" aria-hidden="true"><i class="b-on" style="width:' + (w * u.on / n) + 'px"></i><i class="b-plan" style="width:' + (w * u.plan / n) + 'px"></i></span>';
+  }
+
+  function secRow(id, title, count, ncols) {
+    var exp = !ui.collapsedSec[id];
+    return '<tr class="sec" data-sec="' + id + '" aria-expanded="' + exp + '"><th colspan="2" class="lab"><button type="button" data-toggle-sec="' + id + '"><span class="chev">▾</span><span class="t">' + title + '</span><span class="ct">' + (count || "") + '</span></button></th><td colspan="' + ncols + '"></td></tr>';
+  }
+
+  function render() {
+    var sites = visibleSites();
+    var n = sites.length;
+    var h = [];
+    // Header
+    h.push('<thead><tr><th class="lab corner" scope="col">Configuration</th><th class="use corner" scope="col">Sites</th>');
+    sites.forEach(function (s) {
+      var r = s.stats.reuse;
+      h.push('<th class="sitecol" scope="col"><button type="button" class="sitehead" data-site="' + s.id + '"><span class="pill ' + s.status + '">' + s.status + '</span><span class="n">' + esc(s.name) + '</span><span class="cty">' + esc(s.country) + '</span><span class="reuse">' + (r == null ? "No forms scoped yet" : s.stats.active + (s.registration.isNew ? 1 : 0) + " forms · " + r + "% from library") + "</span></button></th>");
+    });
+    h.push("</tr></thead>");
+
+    if (!n) { h.push('<tbody><tr><td class="empty" colspan="2">No site has this status.</td></tr></tbody>'); document.getElementById("matrix").innerHTML = h.join(""); return; }
+
+    function row(label, hint, cells, cls) {
+      return '<tr class="' + (cls || "") + '"><th class="lab" scope="row"><span class="rowlabel">' + label + "</span>" + (hint ? '<span class="rowhint">' + hint + "</span>" : "") + '</th><td class="use"></td>' + cells.join("") + "</tr>";
+    }
+    function per(fn, center) { return sites.map(function (s) { return '<td class="sitecol' + (center ? " c" : "") + '">' + fn(s) + "</td>"; }); }
+
+    // 1. Status & milestones
+    h.push("<tbody>" + secRow("status", "Status & milestones", "", n));
+    if (!ui.collapsedSec.status) {
+      h.push(row("Phase", "Current step", per(function (s) { return esc(s.phase); })));
+      MILESTONES.forEach(function (m) { h.push(row(m[1], m[2], per(function (s) { return milestoneCell(s.milestones[m[0]]); }))); });
+      h.push(row("Open items", "From the weekly follow-up", per(function (s) {
+        var k = (s.openItems || []).length;
+        return k ? '<span class="muted">' + k + " open</span>" : '<span class="m unk">·</span>';
+      })));
+    }
+    h.push("</tbody>");
+
+    // 2. Registration
+    h.push("<tbody>" + secRow("reg", "Registration & patient ID", "", n));
+    if (!ui.collapsedSec.reg) {
+      h.push(row("MSF ID prefix", "idgen generator", per(function (s) {
+        var p = s.registration.primaryId;
+        if (!p) return '<span class="m unk">·</span>';
+        return (p.prefix ? '<span class="idv">' + esc(p.prefix) + "</span>" : '<span class="tbd">To define</span>') + (p.example ? '<span class="idx">e.g. ' + esc(p.example) + "</span>" : "");
+      })));
+      h.push(row("Other identifiers", "Patient identifier types", per(function (s) {
+        if (!s.registration.primaryId) return '<span class="m unk">·</span>';
+        var o = s.registration.otherIds || [];
+        return o.length ? o.map(esc).join("<br>") : '<span class="muted">None</span>';
+      })));
+      h.push(row("Registration form", "Shared template or site-specific", per(function (s) {
+        if (!s.registration.primaryId) return '<span class="m unk">·</span>';
+        return (s.registration.isNew ? '<span class="tag-new">New</span> ' + esc(s.registration.fields) : '<span class="muted">LIME template, adapted</span>') + syncBadge(s, "F00");
+      })));
+      h.push(row("Extra fields", "Beyond name, sex, DOB, ID", per(function (s) { return s.registration.primaryId ? textCell(s.registration.isNew ? "" : s.registration.fields) : '<span class="m unk">·</span>'; })));
+      h.push(row("Address hierarchy", "", per(function (s) { return s.registration.primaryId ? textCell(s.registration.address) : '<span class="m unk">·</span>'; })));
+      h.push(row("Languages", "UI locales", per(function (s) { return s.registration.primaryId ? textCell(s.registration.languages) : '<span class="m unk">·</span>'; })));
+      h.push(row("Locations & services", "Login and visit locations", per(function (s) { return s.locations ? esc(s.locations) : '<span class="m unk">·</span>'; })));
+    }
+    h.push("</tbody>");
+
+    // 3. Modules
+    h.push("<tbody>" + secRow("mods", "Modules", D.modules.length + " key modules", n));
+    if (!ui.collapsedSec.mods) {
+      D.modules.forEach(function (m) {
+        var u = { on: 0, plan: 0 }; sites.forEach(function (s) { var st = s.modules[m[0]]; if (st === "on") u.on++; else if (st === "plan") u.plan++; });
+        h.push('<tr><th class="lab" scope="row"><span class="fname">' + esc(m[1]) + '</span></th><td class="use">' + useCell(u, n) + "</td>" + per(function (s) { return mark(s.modules[m[0]]); }, true).join("") + "</tr>");
+      });
+    }
+    h.push("</tbody>");
+
+    // 4. DHIS2 integration
+    var syncedLive = sites.filter(function (s) { return s.integration.status === "live"; }).length;
+    h.push("<tbody>" + secRow("int", "DHIS2 integration (OpenFn)", syncedLive + " of " + n + " sites syncing", n));
+    if (!ui.collapsedSec.int) {
+      h.push(row("Sync status", "Production OpenFn project", per(function (s) {
+        var st = INT_STATUS[s.integration.status];
+        if (!st) return '<span class="m unk" title="Not assessed">·</span>';
+        return '<span class="m ' + st[0] + '" title="' + esc(st[2]) + '">' + st[1] + "</span>" + (s.integration.notes ? '<span class="note-dot" title="' + esc(s.integration.notes) + '">ⓘ</span>' : "");
+      }, true)));
+      h.push(row("OpenFn config", "Version of the project YAML", per(function (s) {
+        var i = s.integration;
+        if (!i.version) return i.status ? '<span class="tbd">To build</span>' : '<span class="m unk">·</span>';
+        return '<span class="idv">' + esc(i.version) + '</span><span class="idx">' + fmtD(parseD(i.versionDate)) + "</span>";
+      })));
+      h.push(row("DHIS2 target", "Tracker program", per(function (s) { return s.integration.status ? textCell(s.integration.dhis2 === "To define" ? "" : s.integration.dhis2) : '<span class="m unk">·</span>'; })));
+      h.push(row("WF1 · DHIS2 → OpenMRS", "Patient migration", per(function (s) { return wfCell(s, "wf1"); })));
+      h.push(row("WF2 · OpenMRS → DHIS2", "Patients (TEIs) and encounters", per(function (s) { return wfCell(s, "wf2"); })));
+      h.push(row("WF3 · OpenMRS → DHIS2", "All programs, collection mappings", per(function (s) { return wfCell(s, "wf3"); })));
+      h.push(row("Forms synced", "In production / staging mapping", per(function (s) {
+        if (!s.integration.status) return '<span class="m unk">·</span>';
+        var live = 0, stg = 0;
+        Object.keys(s.sync).forEach(function (c) { if (s.sync[c] === "live") live++; else stg++; });
+        return '<span style="font-weight:600">' + live + '</span> <span class="muted">live</span>' + (stg ? ' · <span style="font-weight:600">' + stg + '</span> <span class="muted">staging</span>' : "");
+      })));
+      h.push(row("Config path", "", per(function (s) { return s.integration.config ? '<span class="idx" style="font-family:var(--font-mono);word-break:break-all">' + esc(s.integration.config) + "</span>" : '<span class="m unk">·</span>'; })));
+    }
+    h.push("</tbody>");
+
+    // 5. Forms by program
+    var q = ui.q.trim().toLowerCase();
+    var totalShown = 0;
+    var formBody = [];
+    programNames.forEach(function (p) {
+      var fr = programs[p].filter(function (f) {
+        if (q && (f.code + " " + f.name + " " + p).toLowerCase().indexOf(q) < 0) return false;
+        if (ui.hideUnused) { var u = usage(f.code, sites); if (!u.on && !u.plan && !sites.some(function (s) { return s.formState[f.code] === "hold"; })) return false; }
+        return true;
+      });
+      if (!fr.length) return;
+      totalShown += fr.length;
+      var exp = !ui.collapsedProg[p] || !!q;
+      // program summary per site
+      var pc = sites.map(function (s) {
+        var on = 0, plan = 0, hold = 0, no = 0, tot = programs[p].length;
+        programs[p].forEach(function (f) { var st = s.formState[f.code]; if (st === "on") on++; else if (st === "plan") plan++; else if (st === "hold") hold++; else if (st === "no") no++; });
+        var st = on ? "on" : plan ? "plan" : hold ? "hold" : no ? "no" : null;
+        var cnt = on + plan;
+        return '<td class="sitecol c">' + (st && cnt ? '<span class="m ' + st + '" title="' + cnt + " of " + tot + ' forms">' + cnt + "/" + tot + "</span>" : mark(st, st === "hold" ? "On hold" : null)) + "</td>";
+      });
+      var pu = { on: 0, plan: 0 };
+      sites.forEach(function (s) { var a = programs[p].some(function (f) { return s.formState[f.code] === "on"; }); var b = programs[p].some(function (f) { return s.formState[f.code] === "plan"; }); if (a) pu.on++; else if (b) pu.plan++; });
+      formBody.push('<tr class="prog" aria-expanded="' + exp + '"><th class="lab" scope="row"><button type="button" data-toggle-prog="' + esc(p) + '"><span class="chev">▾</span>' + esc(p) + ' <span class="muted" style="font-weight:400;font-size:12px">' + programs[p].length + "</span></button></th><td class=\"use\">" + useCell(pu, n) + "</td>" + pc.join("") + "</tr>");
+      if (!exp) return;
+      fr.forEach(function (f) {
+        var u = usage(f.code, sites);
+        var label = '<span class="code">' + esc(f.code) + '</span><span class="fname">' + esc(f.name) + "</span>";
+        if (f.custom) label += ' <span class="tag-new" title="Site-specific form for ' + esc(f.owner) + '">New</span>';
+        if (!f.custom && !f.inLibrary) label += ' <span class="note-dot" title="Not yet in the distro form library">◌</span>';
+        if (f.note) label += ' <span class="note-dot" title="' + esc(f.note) + '">ⓘ</span>';
+        formBody.push('<tr class="form"><th class="lab" scope="row">' + label + '</th><td class="use">' + useCell(u, n) + "</td>" + sites.map(function (s) {
+          var st = s.formState[f.code];
+          var note = s.formNotes[f.code];
+          return '<td class="sitecol c">' + mark(st, note ? STATE_NAME[st] + ": " + note : null) + syncBadge(s, f.code) + (note ? '<span class="note-dot" title="' + esc(note) + '">ⓘ</span>' : "") + "</td>";
+        }).join("") + "</tr>");
+      });
+    });
+    h.push("<tbody>" + secRow("forms", "Programs & forms", rows.length + " forms, " + programNames.length + " programs", n));
+    if (!ui.collapsedSec.forms) {
+      if (formBody.length) h.push(formBody.join(""));
+      else h.push('<tr><td class="empty" colspan="' + (n + 2) + '">No form matches "' + esc(ui.q) + '".</td></tr>');
+    }
+    h.push("</tbody>");
+
+    document.getElementById("matrix").innerHTML = h.join("");
+    document.getElementById("toggleProgs").textContent = programNames.every(function (p) { return ui.collapsedProg[p]; }) ? "Expand programs" : "Collapse programs";
+  }
+
+  function renderStrip() {
+    var by = { live: 0, preparation: 0, planned: 0 };
+    D.sites.forEach(function (s) { by[s.status]++; });
+    var libActive = library.filter(function (f) { return f.inLibrary; });
+    var shared = libActive.filter(function (f) { return D.sites.filter(function (s) { var st = s.formState[f.code]; return st === "on" || st === "plan"; }).length >= 2; }).length;
+    var prep = D.sites.filter(function (s) { return s.status !== "live" && s.stats.reuse != null; });
+    var reuse = prep.length ? Math.round(prep.reduce(function (a, s) { return a + s.stats.reuse; }, 0) / prep.length) : null;
+    // next upcoming milestone
+    var next = null;
+    D.sites.forEach(function (s) {
+      MILESTONES.forEach(function (m) {
+        var ms = s.milestones[m[0]]; if (!ms || ms.done) return;
+        var pd = parseD(ms.d); if (!pd || pd.prec < 3) return;
+        if (!next || pd.date < next.date) next = { date: pd.date, pd: pd, site: s.name, label: m[1] };
+      });
+    });
+    var nextHtml = "None scheduled";
+    if (next) { var days = Math.round((next.date - TODAY) / 864e5); nextHtml = esc(next.site) + ": " + next.label + ", " + fmtD(next.pd) + (days >= 0 ? " (in " + days + " d)" : " (overdue " + (-days) + " d)"); }
+    var newForms = D.sites.reduce(function (a, s) { return a + s.stats.neu; }, 0);
+    document.getElementById("strip").innerHTML = [
+      ["Sites", D.sites.length + "", by.live + " live · " + by.preparation + " in preparation · " + by.planned + " planned"],
+      ["Library forms shared", shared + " <small>/ " + libActive.length + "</small>", "Used or planned at 2+ sites"],
+      ["Reuse in new sites", reuse == null ? "–" : reuse + "<small>%</small>", "Average for sites not yet live with scoped forms"],
+      ["DHIS2 sync", D.sites.filter(function (s) { return s.integration.status === "live"; }).length + " <small>live</small>", D.sites.filter(function (s) { return s.integration.status === "template"; }).length + " with template config only · " + D.sites.filter(function (s) { return s.integration.status === "planned"; }).length + " planned"],
+      ["Site-specific items", newForms + "", "New forms or registration built for one site"],
+      ["Next milestone", next ? fmtD(next.pd) : "–", nextHtml]
+    ].map(function (x) { return '<div class="stat"><span class="k">' + x[0] + '</span><span class="v">' + x[1] + '</span><span class="d">' + x[2] + "</span></div>"; }).join("");
+    document.getElementById("asof").textContent = "Data as of " + fmtD(parseD(D.asOf));
+  }
+
+  function openSite(id) {
+    var s = D.sites.filter(function (x) { return x.id === id; })[0]; if (!s) return;
+    var p = s.registration.primaryId;
+    var ms = MILESTONES.filter(function (m) { return s.milestones[m[0]]; }).map(function (m) { var v = s.milestones[m[0]]; var pd = parseD(v.d); return "<dt>" + m[1] + "</dt><dd>" + (pd ? (v.approx ? "≈ " : "") + fmtD(pd) : "Date TBC") + (v.done ? " · done" : "") + (v.note ? '<br><span class="muted">' + esc(v.note) + "</span>" : "") + "</dd>"; }).join("");
+    var html = '<header><div><span class="pill ' + s.status + '">' + s.status + "</span><h2 id=\"dlgTitle\">" + esc(s.name) + '</h2><span class="muted">' + esc(s.country) + " · " + esc(s.phase) + '</span></div><button class="x" type="button" id="dlgClose" aria-label="Close">✕</button></header>';
+    html += '<div><h3>Implementation metrics</h3><dl><dt>Forms enabled or planned</dt><dd>' + s.stats.active + "</dd><dt>From shared library</dt><dd>" + s.stats.lib + "</dd><dt>Site-specific (new)</dt><dd>" + s.stats.neu + "</dd><dt>Reuse rate</dt><dd>" + (s.stats.reuse == null ? "Not scoped yet" : s.stats.reuse + "%") + "</dd></dl></div>";
+    if (ms) html += "<div><h3>Milestones</h3><dl>" + ms + "</dl></div>";
+    if (p) html += "<div><h3>Patient ID</h3><dl><dt>Primary</dt><dd>" + esc(p.type) + ", " + esc(p.pattern) + "</dd>" + ((s.registration.otherIds || []).length ? "<dt>Other</dt><dd>" + s.registration.otherIds.map(esc).join("<br>") + "</dd>" : "") + "</dl></div>";
+    var it = s.integration;
+    if (it.status) {
+      var wfs = Object.keys(it.workflows || {}).map(function (k) { var w = it.workflows[k]; return "<dt>" + k.toUpperCase() + "</dt><dd>" + esc(w.name) + '<br><span class="muted">' + (w.enabled ? "Enabled" : "Disabled") + (w.staging ? " (staging)" : "") + ", " + esc(w.schedule) + " UTC</span></dd>"; }).join("");
+      html += "<div><h3>DHIS2 integration</h3><dl><dt>Status</dt><dd>" + INT_STATUS[it.status][1] + "</dd>" + (it.version ? "<dt>OpenFn config</dt><dd>" + esc(it.version) + " · " + fmtD(parseD(it.versionDate)) + "</dd>" : "") + (it.metadata ? "<dt>Metadata</dt><dd>" + esc(it.metadata) + "</dd>" : "") + wfs + (it.notes ? "<dt>Notes</dt><dd>" + esc(it.notes) + "</dd>" : "") + "</dl></div>";
+    }
+    if ((s.openItems || []).length) html += "<div><h3>Open items</h3><ul>" + s.openItems.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>";
+    if (s.notes) html += '<div><h3>Notes</h3><p style="margin:0">' + esc(s.notes) + "</p></div>";
+    document.getElementById("dlgBody").innerHTML = html;
+    var dlg = document.getElementById("dlg");
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+    document.getElementById("dlgClose").onclick = function () { dlg.close ? dlg.close() : dlg.removeAttribute("open"); };
+  }
+
+  // Events
+  document.getElementById("statusSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-s]"); if (!b) return;
+    ui.status = b.getAttribute("data-s");
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    persist(); render();
+  });
+  document.getElementById("q").addEventListener("input", function () { ui.q = this.value; render(); });
+  var hu = document.getElementById("hideUnused");
+  hu.checked = ui.hideUnused;
+  hu.addEventListener("change", function () { ui.hideUnused = this.checked; persist(); render(); });
+  document.getElementById("toggleProgs").addEventListener("click", function () {
+    var allCollapsed = programNames.every(function (p) { return ui.collapsedProg[p]; });
+    programNames.forEach(function (p) { ui.collapsedProg[p] = !allCollapsed; });
+    persist(); render();
+  });
+  document.getElementById("matrix").addEventListener("click", function (e) {
+    var t = e.target.closest("[data-toggle-sec],[data-toggle-prog],[data-site]"); if (!t) return;
+    if (t.hasAttribute("data-site")) return openSite(t.getAttribute("data-site"));
+    if (t.hasAttribute("data-toggle-sec")) { var k = t.getAttribute("data-toggle-sec"); ui.collapsedSec[k] = !ui.collapsedSec[k]; }
+    else { var p = t.getAttribute("data-toggle-prog"); ui.collapsedProg[p] = !ui.collapsedProg[p]; }
+    persist(); render();
+  });
+  document.getElementById("dlg").addEventListener("click", function (e) { if (e.target === this) this.close(); });
+
+  Array.prototype.forEach.call(document.querySelectorAll("#statusSeg button"), function (x) { x.setAttribute("aria-pressed", String(x.getAttribute("data-s") === ui.status)); });
+  renderStrip();
+  render();
+})();
+</script>
+</body>
+</html>

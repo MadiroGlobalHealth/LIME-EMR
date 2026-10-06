@@ -4,4 +4,5 @@
 - [Content Management](content-management.md)
 - [Translations](translations.md)
 - [Backup & Recovery](restic_backup.md)
+- [Site Matrix](site-matrix/index.html ':ignore')
 - [Changelog](CHANGE_LOG.md)
