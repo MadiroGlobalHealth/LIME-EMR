@@ -15,4 +15,6 @@ Click any value to change it; "Save to GitHub" commits each changed profile unde
 account. Inside Claude it uses your GitHub connector (claude.ai Settings, Connectors); the standalone
 page uses your personal access token instead. Either way you need write access to this repository.
 
+Editing app for the team: `tools/site-matrix` (deploy on Vercel or Cloudflare Pages, see its README).
+
 Workflow and scripts: see the `site-profiles` skill in `.claude/skills/site-profiles/SKILL.md`.

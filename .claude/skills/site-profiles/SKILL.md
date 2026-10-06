@@ -65,28 +65,22 @@ Locations Services, Forms) and meeting notes.
    - Action items → `open_items`.
 3. Build, then run `gaps.py <site>` and show the checklist.
 
-## 3. Publish the shared page
+## 3. The site matrix app
 
-The page reads every profile live from GitHub when it opens and writes changes back as commits made
-with the viewer's own GitHub connector. Each save is one commit per site profile, authored by that
-person, with a message listing every change (`site-matrix(<site>): ...`). History per site is in the
-page (site panel, History tab) and in `git log docs/site-matrix/profiles/<site>.md`.
+The editing app lives in `tools/site-matrix` (React, Vite, Tailwind, shadcn/ui-style components; see
+its README). It reads every profile live from GitHub and saves each change as a commit by the person
+who signed in. Deploy it on Vercel or Cloudflare Pages (root directory `tools/site-matrix`); set
+`VITE_REPO_BRANCH` to the branch to edit, and `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` from a GitHub
+App installed on the repository for "Sign in with GitHub".
 
-1. `python3 scripts/site-profiles/build.py --branch <branch> --artifact <scratchpad>/site-matrix.html`
-   `--branch` is where the page reads and commits; use the default branch once the site matrix is
-   merged (it defaults to the current local branch).
-2. Publish that file with the Artifact tool, with capabilities
-   `{"mcp": {"servers": [{"server": "github", "tools": ["get_file_contents", "create_or_update_file", "list_commits", "get_me"]}]}}`.
-3. The page URL is recorded in `docs/site-matrix/README.md` under "Shared page". Republish to that
-   URL (pass it as `url`) so the link stays the same. Republish only when the template, the branch or
-   the embedded snapshot needs to change; profile edits do not need a republish.
-4. Editors need write access to the repository. Inside Claude the page saves through the viewer's
-   GitHub connector. The same page opened standalone (`docs/site-matrix/index.html` on GitHub Pages
-   or locally) reads the profiles anonymously from api.github.com and saves with a fine-grained
-   personal access token the viewer pastes in ("Sign in to GitHub"; repository LIME-EMR only,
-   Contents: Read and write). The token stays in that browser. Without access the page is read-only.
+After changing profiles or the catalog from the repo side, run `build.py` so `src/snapshot.json`
+(the app's offline fallback) and `docs/site-matrix/index.html` stay current. Before committing app
+changes: `npm test`, `npm run build`, and the end-to-end check in `tests/e2e.mjs`.
 
-## 4. Review changes made in the page
+The single-file page (`scripts/site-profiles/template.html`, rendered to `docs/site-matrix/index.html`
+and to a Claude artifact with `--artifact`) remains as a lightweight read-mostly view.
+
+## 4. Review changes made in the app
 
 Changes made in the page are ordinary commits. To report on them:
 `git log --format='%h %an %ad %s' --date=short -- docs/site-matrix/profiles/`. After pulling, run

@@ -1,0 +1,45 @@
+{
+  "name": "lime-site-matrix",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "LIME EMR site matrix: edit site profiles, every save is a GitHub commit by the person who made it.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "snapshot": "python3 ../../scripts/site-profiles/build.py"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@tanstack/react-table": "8.21.3",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "cmdk": "1.1.1",
+    "js-yaml": "4.1.0",
+    "lucide-react": "0.577.0",
+    "radix-ui": "1.4.3",
+    "react": "19.1.9",
+    "react-dom": "19.1.9",
+    "sonner": "2.0.8",
+    "tailwind-merge": "3.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.18",
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "22.15.30",
+    "@types/react": "19.1.17",
+    "@types/react-dom": "19.1.11",
+    "@vitejs/plugin-react": "4.7.0",
+    "tailwindcss": "4.1.18",
+    "typescript": "5.8.3",
+    "vite": "6.4.4",
+    "vitest": "3.2.7"
+  },
+  "overrides": {
+    "rollup": "4.44.1"
+  }
+}

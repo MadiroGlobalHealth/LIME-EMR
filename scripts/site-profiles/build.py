@@ -5,7 +5,8 @@
     python3 scripts/site-profiles/build.py --artifact out.html  # also a page fragment for a Claude artifact
 
 The page is scripts/site-profiles/template.html with the catalog and every
-profile embedded as JSON. Requires PyYAML.
+profile embedded as JSON. Also writes tools/site-matrix/src/snapshot.json, the
+fallback data of the site matrix app. Requires PyYAML.
 """
 import argparse
 import datetime
@@ -20,6 +21,7 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from profiles import LIBRARY, MATRIX, PROFILES, ROOT, load_all  # noqa: E402
 
+APP_SNAPSHOT = os.path.join(ROOT, "tools", "site-matrix", "src", "snapshot.json")
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template.html")
 STATUS_ORDER = {"live": 0, "preparation": 1, "planned": 2, "closed": 3}
 DOC_HEAD = ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
@@ -70,6 +72,11 @@ def main():
     ap.add_argument("--repo", help="GitHub repository (default: from the origin remote)")
     args = ap.parse_args()
     repo = repo_config(args)
+    if os.path.isdir(os.path.dirname(APP_SNAPSHOT)):
+        with open(APP_SNAPSHOT, "w", encoding="utf-8") as fh:
+            json.dump(data(repo), fh, ensure_ascii=False, indent=1, default=str)
+            fh.write("\n")
+        print("wrote " + os.path.relpath(APP_SNAPSHOT, ROOT) + " (fallback data for the site matrix app)")
     out = os.path.join(MATRIX, "index.html")
     open(out, "w", encoding="utf-8").write(render(False, repo))
     print("wrote %s (profiles from %s/%s @ %s)" % (os.path.relpath(out), repo["owner"], repo["repo"], repo["branch"]))
