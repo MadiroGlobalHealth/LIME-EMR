@@ -17,11 +17,19 @@ registration:
   id_prefix: null
   custom_form: true
   extra_fields:
-  - Site-specific registration form (F00) defined in the Mombasa metadata file
+    - Site-specific registration form (F00) defined in the Mombasa metadata file
   address: null
   languages: null
 locations:
-- Mombasa Health Facility
+  - Mombasa Health Facility
+services:
+  - General consultation
+  - Mental health
+  - Infectious chronic diseases
+  - Family planning
+  - Health promotion
+  - Laboratory
+  - Dispensary
 needs:
   forms_default: not_needed
   forms:
@@ -65,28 +73,20 @@ form_notes:
   F91: Not introduced until further discussions (security measures)
   F92: Not introduced until further discussions (security measures)
 custom_forms:
-- code: MBA-GC
-  name: General consultation
-  program: Outpatient
-  need: needed
-  note: Combines OPD General (F44) and Gynaecology (F73). Specs to finalize
+  - code: MBA-GC
+    name: General consultation
+    program: Outpatient
+    need: needed
+    note: Combines OPD General (F44) and Gynaecology (F73). Specs to finalize
 integration:
   dhis2_target: null
   need: needed
   note: DHIS2 needs to be confirmed with the project.
 open_items:
-- 'Profiles: clarify default profiles vs MSF-defined users'
-- 'General consultation form: finalize specs'
-- 'Certification: analyse what is really required and document the strategy'
-- FiWi kit from Geneva to discuss before hardware is sent
-- IT checklist to discuss separately
+  - 'Profiles: clarify default profiles vs MSF-defined users'
+  - 'General consultation form: finalize specs'
+  - 'Certification: analyse what is really required and document the strategy'
+  - FiWi kit from Geneva to discuss before hardware is sent
+  - IT checklist to discuss separately
 notes: Requirements from 'LIME - Mombasa - Activities and forms'. One location needed.
-services:
-- General consultation
-- Mental health
-- Infectious chronic diseases
-- Family planning
-- Health promotion
-- Laboratory
-- Dispensary
 ---

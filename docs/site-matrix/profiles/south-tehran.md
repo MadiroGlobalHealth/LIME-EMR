@@ -8,7 +8,7 @@ status: planned
 phase: Feasibility & budgeting (urgent for PoA)
 milestones: {}
 open_items:
-- Technical investigation of hosting infrastructure
-- Feasibility analysis and budget, urgent for PoA
-- New MedCo arriving
+  - Technical investigation of hosting infrastructure
+  - Feasibility analysis and budget, urgent for PoA
+  - New MedCo arriving
 ---

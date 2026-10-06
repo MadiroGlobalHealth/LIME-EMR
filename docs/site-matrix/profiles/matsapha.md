@@ -15,81 +15,81 @@ milestones:
 integration:
   dhis2_target: null
 open_items:
-- 'Users: confirm whether the admin account is still in use'
-- 'User creation troubleshooting: share with Pius'
+  - 'Users: confirm whether the admin account is still in use'
+  - 'User creation troubleshooting: share with Pius'
 notes: Data migration and cleaning completed. Ongoing support process clarified.
 detected:
-  generated_at: '2026-10-06T13:12:18Z'
-  source_commit: 75d3956
+  generated_at: '2026-10-06T13:31:31Z'
+  source_commit: 95c4b50
   site_folder: sites/matsapha
   forms:
-  - F11-F12
-  - F29-F34
-  - F40
-  - F51-F52
-  - F59-F60
-  - F73
+    - F11-F12
+    - F29-F34
+    - F40
+    - F51-F52
+    - F59-F60
+    - F73
   modules:
-  - registration
-  - chart
-  - appointments
-  - queues
-  - lab
-  - meds
-  - dispensing
-  - flags
-  - tasks
-  - labels
-  - reports
-  - ocl
+    - registration
+    - chart
+    - appointments
+    - queues
+    - lab
+    - meds
+    - dispensing
+    - flags
+    - tasks
+    - labels
+    - reports
+    - ocl
   frontend_modules_removed:
-  - '@madiro/esm-mental-health-app'
-  - '@madiro/esm-nutrition-app'
-  - '@openmrs/esm-ward-app'
+    - '@madiro/esm-mental-health-app'
+    - '@madiro/esm-nutrition-app'
+    - '@openmrs/esm-ward-app'
   registration:
     id_prefix: SZ-
     id_example: SZ-1024
-    id_charset: 0123456789
+    id_charset: '0123456789'
     other_ids:
-    - Patient ID (required, Patient ID must be exactly 5 digits (e.g. 12345))
+      - Patient ID (required, Patient ID must be exactly 5 digits (e.g. 12345))
     extra_fields:
-    - Gender identity
-    - Marital status
-    - Partnership status
-    - Occupation
-    - Occupation other
-    - Date of first visit
-    - Telephone number
-    - Second telephone number
-    - Email address
-    - 2 emergency contacts
+      - Gender identity
+      - Marital status
+      - Partnership status
+      - Occupation
+      - Occupation other
+      - Date of first visit
+      - Telephone number
+      - Second telephone number
+      - Email address
+      - 2 emergency contacts
     id_label_printing: true
     address:
-    - Country
-    - Region
-    - Inkhundla
-    - Address 1
-    - Address 2
+      - Country
+      - Region
+      - Inkhundla
+      - Address 1
+      - Address 2
     default_language: en
     languages:
-    - en
+      - en
   locations:
-  - Manzini Clinic
+    - Manzini Clinic
   integration:
     config: sites/matsapha/configs/openfn/mosul-project.yaml
     workflows:
-    - name: wf1-dhis2-omrs-migration
-      cron: 0 0 * * *
-      enabled: false
-    - name: wf2-omrs-dhis2
-      cron: 0 0 * * *
-      enabled: false
+      - name: wf1-dhis2-omrs-migration
+        cron: 0 0 * * *
+        enabled: false
+      - name: wf2-omrs-dhis2
+        cron: 0 0 * * *
+        enabled: false
     version: v1.5.1
     mapped_forms:
-    - F00
-    - F29-F34
+      - F00
+      - F29-F34
     identical_to:
-    - bunia
+      - bunia
     status: template
     synced_forms: []
 ---

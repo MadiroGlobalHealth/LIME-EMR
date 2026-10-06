@@ -8,5 +8,5 @@ status: planned
 phase: Feasibility & budgeting (urgent for PoA)
 milestones: {}
 open_items:
-- Feasibility analysis and budgeting, urgent for PoA
+  - Feasibility analysis and budgeting, urgent for PoA
 ---

@@ -16,79 +16,79 @@ integration:
 open_items: []
 notes: Surgical project. Ward and bed management enabled (LIME2-1147).
 detected:
-  generated_at: '2026-10-06T13:12:18Z'
-  source_commit: 75d3956
+  generated_at: '2026-10-06T13:31:31Z'
+  source_commit: 95c4b50
   site_folder: sites/bunia
   forms:
-  - F15-F21
-  - F29-F34
-  - F40
-  - F46-F48
-  - F75-F76
+    - F15-F21
+    - F29-F34
+    - F40
+    - F46-F48
+    - F75-F76
   modules:
-  - registration
-  - chart
-  - appointments
-  - queues
-  - lab
-  - meds
-  - dispensing
-  - ward
-  - flags
-  - tasks
-  - labels
-  - reports
-  - ocl
+    - registration
+    - chart
+    - appointments
+    - queues
+    - lab
+    - meds
+    - dispensing
+    - ward
+    - flags
+    - tasks
+    - labels
+    - reports
+    - ocl
   frontend_modules_removed:
-  - '@madiro/esm-mental-health-app'
-  - '@madiro/esm-nutrition-app'
+    - '@madiro/esm-mental-health-app'
+    - '@madiro/esm-nutrition-app'
   registration:
     id_prefix: CD511-
     id_example: CD511-1024
-    id_charset: 0123456789
+    id_charset: '0123456789'
     other_ids:
-    - DHIS2 ID (optional)
+      - DHIS2 ID (optional)
     extra_fields:
-    - Name 2
-    - Name 3
-    - Nationality
-    - Current status
-    - Legal status
-    - Marital status
-    - Number of children
-    - Occupation
-    - Telephone number
-    - Email address
-    - 2 emergency contacts
+      - Name 2
+      - Name 3
+      - Nationality
+      - Current status
+      - Legal status
+      - Marital status
+      - Number of children
+      - Occupation
+      - Telephone number
+      - Email address
+      - 2 emergency contacts
     id_label_printing: true
     address:
-    - Country
-    - Province
-    - Health Zone
-    - Address
+      - Country
+      - Province
+      - Health Zone
+      - Address
     default_language: fr
     languages:
-    - en
-    - fr
+      - en
+      - fr
   locations:
-  - Bunia
-  - Surgical Ward
-  - Post-op Recovery Ward
+    - Bunia
+    - Surgical Ward
+    - Post-op Recovery Ward
   integration:
     config: sites/bunia/configs/openfn/bunia-project.yaml
     workflows:
-    - name: wf1-dhis2-omrs-migration
-      cron: 0 0 * * *
-      enabled: false
-    - name: wf2-omrs-dhis2
-      cron: 0 0 * * *
-      enabled: false
+      - name: wf1-dhis2-omrs-migration
+        cron: 0 0 * * *
+        enabled: false
+      - name: wf2-omrs-dhis2
+        cron: 0 0 * * *
+        enabled: false
     version: v1.5.1
     mapped_forms:
-    - F00
-    - F29-F34
+      - F00
+      - F29-F34
     identical_to:
-    - matsapha
+      - matsapha
     status: template
     synced_forms: []
 ---

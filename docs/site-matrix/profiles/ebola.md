@@ -8,5 +8,5 @@ status: preparation
 phase: Tablet setup
 milestones: {}
 open_items:
-- Finalize setup of 2 tablets
+  - Finalize setup of 2 tablets
 ---

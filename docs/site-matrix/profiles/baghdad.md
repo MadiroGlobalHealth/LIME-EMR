@@ -8,5 +8,5 @@ status: planned
 phase: Feasibility & budgeting
 milestones: {}
 open_items:
-- Feasibility assessment and budgeting
+  - Feasibility assessment and budgeting
 ---

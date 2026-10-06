@@ -18,12 +18,17 @@ HEADER = ("# Site profile. Everything above `detected` is maintained by people (
 
 
 class _Dumper(yaml.SafeDumper):
+    """Matches js-yaml's dump() used by the site matrix page: indented lists, no line folding."""
+
     def ignore_aliases(self, data):
         return True
 
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
 
 def _str(dumper, value):
-    style = "|" if "\n" in value else None
+    style = "|" if "\n" in value else ("'" if value.isdigit() else None)
     return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
 
 
@@ -77,7 +82,7 @@ def save_profile(site_id, meta, body=""):
     if "detected" in meta:
         ordered.pop("detected", None)
         ordered["detected"] = meta["detected"]
-    fm = yaml.dump(ordered, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=110, default_flow_style=False)
+    fm = yaml.dump(ordered, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=100000, default_flow_style=False)
     os.makedirs(PROFILES, exist_ok=True)
     with open(profile_path(site_id), "w", encoding="utf-8") as fh:
         fh.write("---\n" + HEADER + fm + "---\n")

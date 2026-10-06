@@ -8,7 +8,7 @@ status: planned
 phase: Feasibility & budgeting
 milestones: {}
 open_items:
-- 'IT infrastructure: FiWi kit to confirm'
-- User acceptance to confirm, high change management risk
-- 'Alternative: implement in the other new project (early stage)'
+  - 'IT infrastructure: FiWi kit to confirm'
+  - User acceptance to confirm, high change management risk
+  - 'Alternative: implement in the other new project (early stage)'
 ---
