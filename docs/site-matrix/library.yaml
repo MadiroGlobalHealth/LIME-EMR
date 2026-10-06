@@ -1,0 +1,107 @@
+# LIME EMR catalog used by the site matrix.
+# Forms: every form of the shared library (distro ampathforms) with its program.
+# scripts/site-profiles/extract.py appends new distro forms here with program "Unassigned".
+# in_library: false marks forms referenced by sites but not yet in the distro library.
+
+forms:
+  - {code: F01, name: "MHPSS Baseline (v1)", program: "Mental Health"}
+  - {code: F02, name: "MHPSS Follow-up (v1)", program: "Mental Health"}
+  - {code: F03, name: "mhGAP Baseline (v1)", program: "Mental Health"}
+  - {code: F04, name: "mhGAP Follow-up (v1)", program: "Mental Health"}
+  - {code: F05, name: "MHPSS Closure (v1)", program: "Mental Health"}
+  - {code: F06, name: "mhGAP Closure (v1)", program: "Mental Health"}
+  - {code: F07, name: "MH PHQ-9 (v1)", program: "Mental Health"}
+  - {code: F08, name: "ITFC Admission", program: "Nutrition"}
+  - {code: F09, name: "ITFC Discharge", program: "Nutrition"}
+  - {code: F10, name: "Feeding", program: "Nutrition"}
+  - {code: F11, name: "Family Planning Assessment", program: "Family Planning"}
+  - {code: F12, name: "Family Planning Follow-up", program: "Family Planning"}
+  - {code: F13, name: "PNC", program: "Postnatal Care"}
+  - {code: F14, name: "Basic Obstetric Ultrasound", program: "Obstetrics"}
+  - {code: F15, name: "Surgical Safety Checklist", program: "Surgery"}
+  - {code: F16, name: "Operative Report", program: "Surgery"}
+  - {code: F17, name: "Surgery Admission", program: "Surgery"}
+  - {code: F18, name: "Surgery Discharge", program: "Surgery"}
+  - {code: F19, name: "Pre-anesthesia Record", program: "Anesthesia"}
+  - {code: F20, name: "Recovery", program: "Anesthesia"}
+  - {code: F21, name: "Anesthesia Transfer", program: "Anesthesia"}
+  - {code: F22, name: "Neonatal Delivery", program: "Neonatology"}
+  - {code: F23, name: "Neonatal Admission", program: "Neonatology"}
+  - {code: F24, name: "Neonatal Discharge", program: "Neonatology"}
+  - {code: F25, name: "Pediatrics Admission", program: "Pediatrics"}
+  - {code: F26, name: "Pediatrics Discharge", program: "Pediatrics"}
+  - {code: F27, name: "Adult Admission", program: "Adults"}
+  - {code: F28, name: "Adult Discharge", program: "Adults"}
+  - {code: F29, name: "MHPSS Baseline", program: "Mental Health"}
+  - {code: F30, name: "MHPSS Follow-up", program: "Mental Health"}
+  - {code: F31, name: "mhGAP Baseline", program: "Mental Health"}
+  - {code: F32, name: "mhGAP Follow-up", program: "Mental Health"}
+  - {code: F33, name: "MHPSS Closure", program: "Mental Health"}
+  - {code: F34, name: "mhGAP Closure", program: "Mental Health"}
+  - {code: F35, name: "MH PHQ-9", program: "Mental Health"}
+  - {code: F36, name: "Maternity Triage", program: "Maternity"}
+  - {code: F37, name: "Maternity Admission", program: "Maternity"}
+  - {code: F38, name: "Maternity Delivery", program: "Maternity"}
+  - {code: F39, name: "Maternity Discharge", program: "Maternity"}
+  - {code: F40, name: "Referral & Discharge", program: "Other"}
+  - {code: F41, name: "ER Triage", program: "Emergency Room"}
+  - {code: F42, name: "ER Consultation", program: "Emergency Room"}
+  - {code: F43, name: "ER Exit", program: "Emergency Room"}
+  - {code: F44, name: "OPD General", program: "Outpatient"}
+  - {code: F45, name: "ATFC", program: "Nutrition"}
+  - {code: F46, name: "Small Procedure Report", program: "Other"}
+  - {code: F47, name: "Pre-donation", program: "Other"}
+  - {code: F48, name: "Blood Transfusion", program: "Other"}
+  - {code: F49, name: "NCDs Baseline", program: "Non-Communicable Diseases"}
+  - {code: F50, name: "NCDs Follow-up", program: "Non-Communicable Diseases"}
+  - {code: F51, name: "HIV Baseline", program: "HIV"}
+  - {code: F52, name: "HIV Follow-up", program: "HIV"}
+  - {code: F53, name: "TB Baseline", program: "Tuberculosis"}
+  - {code: F54, name: "TB Follow-up", program: "Tuberculosis"}
+  - {code: F55, name: "HBV Baseline", program: "Hepatitis"}
+  - {code: F56, name: "HBV Follow-up", program: "Hepatitis"}
+  - {code: F57, name: "HCV Baseline", program: "Hepatitis"}
+  - {code: F58, name: "HCV Follow-up", program: "Hepatitis"}
+  - {code: F59, name: "Social Work Baseline", program: "Social Work"}
+  - {code: F60, name: "Social Work Follow-up", program: "Social Work"}
+  - {code: F61, name: "Travel Medicine", program: "Travel Medicine"}
+  - {code: F62, name: "Palliative Care Baseline", program: "Palliative Care"}
+  - {code: F63, name: "Palliative Care Follow-up", program: "Palliative Care"}
+  - {code: F64, name: "ICU Admission", program: "Intensive Care Unit"}
+  - {code: F65, name: "ICU Discharge", program: "Intensive Care Unit"}
+  - {code: F66, name: "Snakebites", program: "Snakebites"}
+  - {code: F67, name: "Cholera", program: "Outbreak"}
+  - {code: F68, name: "NTDs Dengue", program: "Neglected Tropical Diseases"}
+  - {code: F69, name: "NTDs Filariasis", program: "Neglected Tropical Diseases"}
+  - {code: F70, name: "NTDs Schistosomiasis", program: "Neglected Tropical Diseases"}
+  - {code: F71, name: "POCUS", program: "Other"}
+  - {code: F72, name: "ANC", program: "Antenatal Care"}
+  - {code: F73, name: "Gynaecology", program: "Gynaecology"}
+  - {code: F74, name: "Cervical Cancer", program: "Cervical Cancer"}
+  - {code: F75, name: "Wound Dressing", program: "Other"}
+  - {code: F76, name: "Radiology Request", program: "Other"}
+  - {code: F90, name: "Safe Abortion Care", program: "Safe Abortion Care", in_library: false}
+  - {code: F91, name: "SV / IPV Admission", program: "Sexual Violence", in_library: false}
+  - {code: F92, name: "SV / IPV Follow-up", program: "Sexual Violence", in_library: false}
+
+# Key modules. "apps" are the frontend modules (spa-assemble-config.json) that
+# make the module available; a module is detected at a site when one of its apps
+# is assembled and not listed in the site's modulesToRemove.
+modules:
+  - {id: registration, name: "Patient registration", apps: ["@openmrs/esm-patient-registration-app"]}
+  - {id: chart, name: "Patient chart & forms", apps: ["@openmrs/esm-patient-chart-app"]}
+  - {id: appointments, name: "Appointments", apps: ["@openmrs/esm-appointments-app"]}
+  - {id: queues, name: "Service queues", apps: ["@openmrs/esm-service-queues-app"]}
+  - {id: lab, name: "Laboratory", apps: ["@openmrs/esm-laboratory-app"]}
+  - {id: meds, name: "Orders & medications", apps: ["@openmrs/esm-patient-medications-app", "@openmrs/esm-patient-orders-app"]}
+  - {id: dispensing, name: "Dispensing", apps: ["@openmrs/esm-dispensing-app"]}
+  - {id: ward, name: "Ward & bed management", apps: ["@openmrs/esm-ward-app"]}
+  - {id: mental_health, name: "Mental health dashboard", apps: ["@madiro/esm-mental-health-app"]}
+  - {id: nutrition, name: "Nutrition dashboard", apps: ["@madiro/esm-nutrition-app"]}
+  - {id: flags, name: "Patient flags", apps: ["@openmrs/esm-patient-flags-app"]}
+  - {id: tasks, name: "Patient tasks", apps: ["@openmrs/esm-patient-task-list-app"]}
+  - {id: labels, name: "ID label printing", apps: ["@openmrs/esm-patient-label-printing-app"]}
+  - {id: reports, name: "Reports", apps: ["@openmrs/esm-reports-app"]}
+  - {id: ocl, name: "OCL terminology", apps: ["@openmrs/esm-openconceptlab-app"]}
+  - {id: billing, name: "Billing", apps: ["@openmrs/esm-billing-app"]}
+  - {id: stock, name: "Stock management", apps: ["@openmrs/esm-stock-management-app"]}
