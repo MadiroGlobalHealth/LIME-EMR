@@ -7,6 +7,11 @@ country: Syria
 status: planned
 phase: Feasibility & budgeting (urgent for PoA)
 milestones: {}
+registration:
+  id_prefix: Test
+  languages:
+    - en
+    - ar
 open_items:
   - Feasibility analysis and budgeting, urgent for PoA
 ---
