@@ -69,7 +69,10 @@ token can write to every public repository the person can access.
 
 ### Vercel
 
-- Import the repository, root directory `tools/site-matrix` (framework: Vite, settings in `vercel.json`).
+- Import the repository. Either set the root directory to `tools/site-matrix` (settings in its
+  `vercel.json`, sign-in functions included), or leave it at the repository root: the root
+  `vercel.json` then builds this app (personal access token sign-in only, since Vercel only picks up
+  functions under the root directory).
 - Environment variables as above.
 - `api/auth/*` runs as Edge Functions.
 

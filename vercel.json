@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci --prefix tools/site-matrix",
+  "buildCommand": "npm run build --prefix tools/site-matrix",
+  "outputDirectory": "tools/site-matrix/dist"
+}
