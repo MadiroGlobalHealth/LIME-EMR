@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>LIME Site Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: summary header, then one matrix of collapsible sections (summary row first, details on demand); site drawer on the right. */
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --surface-2: #f5f7f9; --fg: #142030; --muted: #5a6879; --line: #d9dfe6;
+  --accent: #b3202a;
+  --on: #1d7a52; --on-bg: #dcf1e6; --todo: #2a5db0; --todo-bg: #e2ebfa; --hold: #a3620a; --hold-bg: #fbecd2;
+  --no: #8a96a3; --new: #7a3db8; --new-bg: #efe5fa; --crit: #c2410c; --shade: rgb(10 15 20 / .4);
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #161e27; --surface-2: #1c2632; --fg: #e4eaf0; --muted: #94a3b3; --line: #2a3644; --accent: #ef5a5f;
+    --on: #5fd19b; --on-bg: #143526; --todo: #82aef5; --todo-bg: #172a47; --hold: #f0b45a; --hold-bg: #3a2a10;
+    --no: #66758a; --new: #c49af0; --new-bg: #2c1d40; --crit: #fb8a4c; --shade: rgb(0 0 0 / .55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #161e27; --surface-2: #1c2632; --fg: #e4eaf0; --muted: #94a3b3; --line: #2a3644; --accent: #ef5a5f;
+  --on: #5fd19b; --on-bg: #143526; --todo: #82aef5; --todo-bg: #172a47; --hold: #f0b45a; --hold-bg: #3a2a10;
+  --no: #66758a; --new: #c49af0; --new-bg: #2c1d40; --crit: #fb8a4c; --shade: rgb(0 0 0 / .55);
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; margin: 0; }
+[x-cloak] { display: none !important; }
+.matrix th, .matrix td { border-bottom: 1px solid var(--line); }
+.matrix thead th { position: sticky; top: 0; z-index: 3; background: var(--surface); }
+.matrix .lab { position: sticky; left: 0; z-index: 2; background: var(--surface); }
+.matrix thead .lab { z-index: 4; }
+.matrix tr.sum > * { background: var(--surface-2); }
+.matrix tr.sum .lab { background: var(--surface-2); }
+.matrix tbody tr:not(.sum):hover > * { background: color-mix(in srgb, var(--todo-bg) 35%, var(--surface)); }
+.chip { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 24px; height: 20px; padding: 0 7px; border-radius: 5px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.chip.on { background: var(--on-bg); color: var(--on); }
+.chip.todo { color: var(--todo); background: var(--todo-bg); box-shadow: inset 0 0 0 1px currentColor; background-image: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, currentColor 14%, transparent) 4px 6px); }
+.chip.hold { background: var(--hold-bg); color: var(--hold); }
+.chip.remove { color: var(--hold); box-shadow: inset 0 0 0 1px currentColor; }
+.chip.no { color: var(--no); font-weight: 400; }
+.chip.unk { color: var(--no); opacity: .55; font-weight: 400; }
+.chip.template { background: var(--hold-bg); color: var(--hold); }
+.pending { position: relative; }
+.pending::after { content: ""; position: absolute; top: -3px; right: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--new); box-shadow: 0 0 0 2px var(--surface); }
+.d2 { display: inline-block; margin-left: 4px; font-size: 9.5px; font-weight: 700; color: var(--accent); border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; line-height: 13px; vertical-align: 1px; }
+.d2.stg { border-style: dashed; color: var(--muted); }
+.stripe-plan { background-image: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, currentColor 14%, transparent) 4px 6px); }
+.editable { cursor: pointer; }
+.editable:hover { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--new) 55%, transparent); border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+<style type="text/tailwindcss">
+@theme inline {
+  --color-bg: var(--bg); --color-surface: var(--surface); --color-surface-2: var(--surface-2); --color-fg: var(--fg);
+  --color-muted: var(--muted); --color-line: var(--line); --color-accent: var(--accent);
+  --color-on: var(--on); --color-on-bg: var(--on-bg); --color-todo: var(--todo); --color-todo-bg: var(--todo-bg);
+  --color-hold: var(--hold); --color-hold-bg: var(--hold-bg); --color-no: var(--no); --color-new: var(--new);
+  --color-new-bg: var(--new-bg); --color-crit: var(--crit); --color-shade: var(--shade);
+  --font-display: var(--font-display); --font-sans: var(--font-body); --font-mono: var(--font-mono);
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js"></script>
+
+<script id="lime-data" type="application/json">{"built_at": "2026-10-06", "repo": {"owner": "MadiroGlobalHealth", "repo": "LIME-EMR", "branch": "claude/laughing-clarke-x32phn", "dir": "docs/site-matrix/profiles", "library": "docs/site-matrix/library.yaml"}, "source_commit": "f659f4f", "library": {"forms": [{"code": "F01", "name": "MHPSS Baseline (v1)", "program": "Mental Health"}, {"code": "F02", "name": "MHPSS Follow-up (v1)", "program": "Mental Health"}, {"code": "F03", "name": "mhGAP Baseline (v1)", "program": "Mental Health"}, {"code": "F04", "name": "mhGAP Follow-up (v1)", "program": "Mental Health"}, {"code": "F05", "name": "MHPSS Closure (v1)", "program": "Mental Health"}, {"code": "F06", "name": "mhGAP Closure (v1)", "program": "Mental Health"}, {"code": "F07", "name": "MH PHQ-9 (v1)", "program": "Mental Health"}, {"code": "F08", "name": "ITFC Admission", "program": "Nutrition"}, {"code": "F09", "name": "ITFC Discharge", "program": "Nutrition"}, {"code": "F10", "name": "Feeding", "program": "Nutrition"}, {"code": "F11", "name": "Family Planning Assessment", "program": "Family Planning"}, {"code": "F12", "name": "Family Planning Follow-up", "program": "Family Planning"}, {"code": "F13", "name": "PNC", "program": "Postnatal Care"}, {"code": "F14", "name": "Basic Obstetric Ultrasound", "program": "Obstetrics"}, {"code": "F15", "name": "Surgical Safety Checklist", "program": "Surgery"}, {"code": "F16", "name": "Operative Report", "program": "Surgery"}, {"code": "F17", "name": "Surgery Admission", "program": "Surgery"}, {"code": "F18", "name": "Surgery Discharge", "program": "Surgery"}, {"code": "F19", "name": "Pre-anesthesia Record", "program": "Anesthesia"}, {"code": "F20", "name": "Recovery", "program": "Anesthesia"}, {"code": "F21", "name": "Anesthesia Transfer", "program": "Anesthesia"}, {"code": "F22", "name": "Neonatal Delivery", "program": "Neonatology"}, {"code": "F23", "name": "Neonatal Admission", "program": "Neonatology"}, {"code": "F24", "name": "Neonatal Discharge", "program": "Neonatology"}, {"code": "F25", "name": "Pediatrics Admission", "program": "Pediatrics"}, {"code": "F26", "name": "Pediatrics Discharge", "program": "Pediatrics"}, {"code": "F27", "name": "Adult Admission", "program": "Adults"}, {"code": "F28", "name": "Adult Discharge", "program": "Adults"}, {"code": "F29", "name": "MHPSS Baseline", "program": "Mental Health"}, {"code": "F30", "name": "MHPSS Follow-up", "program": "Mental Health"}, {"code": "F31", "name": "mhGAP Baseline", "program": "Mental Health"}, {"code": "F32", "name": "mhGAP Follow-up", "program": "Mental Health"}, {"code": "F33", "name": "MHPSS Closure", "program": "Mental Health"}, {"code": "F34", "name": "mhGAP Closure", "program": "Mental Health"}, {"code": "F35", "name": "MH PHQ-9", "program": "Mental Health"}, {"code": "F36", "name": "Maternity Triage", "program": "Maternity"}, {"code": "F37", "name": "Maternity Admission", "program": "Maternity"}, {"code": "F38", "name": "Maternity Delivery", "program": "Maternity"}, {"code": "F39", "name": "Maternity Discharge", "program": "Maternity"}, {"code": "F40", "name": "Referral & Discharge", "program": "Other"}, {"code": "F41", "name": "ER Triage", "program": "Emergency Room"}, {"code": "F42", "name": "ER Consultation", "program": "Emergency Room"}, {"code": "F43", "name": "ER Exit", "program": "Emergency Room"}, {"code": "F44", "name": "OPD General", "program": "Outpatient"}, {"code": "F45", "name": "ATFC", "program": "Nutrition"}, {"code": "F46", "name": "Small Procedure Report", "program": "Other"}, {"code": "F47", "name": "Pre-donation", "program": "Other"}, {"code": "F48", "name": "Blood Transfusion", "program": "Other"}, {"code": "F49", "name": "NCDs Baseline", "program": "Non-Communicable Diseases"}, {"code": "F50", "name": "NCDs Follow-up", "program": "Non-Communicable Diseases"}, {"code": "F51", "name": "HIV Baseline", "program": "HIV"}, {"code": "F52", "name": "HIV Follow-up", "program": "HIV"}, {"code": "F53", "name": "TB Baseline", "program": "Tuberculosis"}, {"code": "F54", "name": "TB Follow-up", "program": "Tuberculosis"}, {"code": "F55", "name": "HBV Baseline", "program": "Hepatitis"}, {"code": "F56", "name": "HBV Follow-up", "program": "Hepatitis"}, {"code": "F57", "name": "HCV Baseline", "program": "Hepatitis"}, {"code": "F58", "name": "HCV Follow-up", "program": "Hepatitis"}, {"code": "F59", "name": "Social Work Baseline", "program": "Social Work"}, {"code": "F60", "name": "Social Work Follow-up", "program": "Social Work"}, {"code": "F61", "name": "Travel Medicine", "program": "Travel Medicine"}, {"code": "F62", "name": "Palliative Care Baseline", "program": "Palliative Care"}, {"code": "F63", "name": "Palliative Care Follow-up", "program": "Palliative Care"}, {"code": "F64", "name": "ICU Admission", "program": "Intensive Care Unit"}, {"code": "F65", "name": "ICU Discharge", "program": "Intensive Care Unit"}, {"code": "F66", "name": "Snakebites", "program": "Snakebites"}, {"code": "F67", "name": "Cholera", "program": "Outbreak"}, {"code": "F68", "name": "NTDs Dengue", "program": "Neglected Tropical Diseases"}, {"code": "F69", "name": "NTDs Filariasis", "program": "Neglected Tropical Diseases"}, {"code": "F70", "name": "NTDs Schistosomiasis", "program": "Neglected Tropical Diseases"}, {"code": "F71", "name": "POCUS", "program": "Other"}, {"code": "F72", "name": "ANC", "program": "Antenatal Care"}, {"code": "F73", "name": "Gynaecology", "program": "Gynaecology"}, {"code": "F74", "name": "Cervical Cancer", "program": "Cervical Cancer"}, {"code": "F75", "name": "Wound Dressing", "program": "Other"}, {"code": "F76", "name": "Radiology Request", "program": "Other"}, {"code": "F90", "name": "Safe Abortion Care", "program": "Safe Abortion Care", "in_library": false}, {"code": "F91", "name": "SV / IPV Admission", "program": "Sexual Violence", "in_library": false}, {"code": "F92", "name": "SV / IPV Follow-up", "program": "Sexual Violence", "in_library": false}], "modules": [{"id": "registration", "name": "Patient registration", "apps": ["@openmrs/esm-patient-registration-app"]}, {"id": "chart", "name": "Patient chart & forms", "apps": ["@openmrs/esm-patient-chart-app"]}, {"id": "appointments", "name": "Appointments", "apps": ["@openmrs/esm-appointments-app"]}, {"id": "queues", "name": "Service queues", "apps": ["@openmrs/esm-service-queues-app"]}, {"id": "lab", "name": "Laboratory", "apps": ["@openmrs/esm-laboratory-app"]}, {"id": "meds", "name": "Orders & medications", "apps": ["@openmrs/esm-patient-medications-app", "@openmrs/esm-patient-orders-app"]}, {"id": "dispensing", "name": "Dispensing", "apps": ["@openmrs/esm-dispensing-app"]}, {"id": "ward", "name": "Ward & bed management", "apps": ["@openmrs/esm-ward-app"]}, {"id": "mental_health", "name": "Mental health dashboard", "apps": ["@madiro/esm-mental-health-app"]}, {"id": "nutrition", "name": "Nutrition dashboard", "apps": ["@madiro/esm-nutrition-app"]}, {"id": "flags", "name": "Patient flags", "apps": ["@openmrs/esm-patient-flags-app"]}, {"id": "tasks", "name": "Patient tasks", "apps": ["@openmrs/esm-patient-task-list-app"]}, {"id": "labels", "name": "ID label printing", "apps": ["@openmrs/esm-patient-label-printing-app"]}, {"id": "reports", "name": "Reports", "apps": ["@openmrs/esm-reports-app"]}, {"id": "ocl", "name": "OCL terminology", "apps": ["@openmrs/esm-openconceptlab-app"]}, {"id": "billing", "name": "Billing", "apps": ["@openmrs/esm-billing-app"]}, {"id": "stock", "name": "Stock management", "apps": ["@openmrs/esm-stock-management-app"]}]}, "sites": [{"id": "bunia", "name": "Bunia", "country": "DR Congo", "status": "live", "phase": "Live", "milestones": {"live": {"date": null, "done": true, "note": "Go-live date to confirm"}}, "integration": {"dhis2_target": null}, "open_items": [], "notes": "Surgical project. Ward and bed management enabled (LIME2-1147).", "detected": {"generated_at": "2026-10-06T13:31:31Z", "source_commit": "95c4b50", "site_folder": "sites/bunia", "forms": ["F15-F21", "F29-F34", "F40", "F46-F48", "F75-F76"], "modules": ["registration", "chart", "appointments", "queues", "lab", "meds", "dispensing", "ward", "flags", "tasks", "labels", "reports", "ocl"], "frontend_modules_removed": ["@madiro/esm-mental-health-app", "@madiro/esm-nutrition-app"], "registration": {"id_prefix": "CD511-", "id_example": "CD511-1024", "id_charset": "0123456789", "other_ids": ["DHIS2 ID (optional)"], "extra_fields": ["Name 2", "Name 3", "Nationality", "Current status", "Legal status", "Marital status", "Number of children", "Occupation", "Telephone number", "Email address", "2 emergency contacts"], "id_label_printing": true, "address": ["Country", "Province", "Health Zone", "Address"], "default_language": "fr", "languages": ["en", "fr"]}, "locations": ["Bunia", "Surgical Ward", "Post-op Recovery Ward"], "integration": {"config": "sites/bunia/configs/openfn/bunia-project.yaml", "workflows": [{"name": "wf1-dhis2-omrs-migration", "cron": "0 0 * * *", "enabled": false}, {"name": "wf2-omrs-dhis2", "cron": "0 0 * * *", "enabled": false}], "version": "v1.5.1", "mapped_forms": ["F00", "F29-F34"], "identical_to": ["matsapha"], "status": "template", "synced_forms": []}}, "body": ""}, {"id": "matsapha", "name": "Matsapha", "country": "Eswatini", "status": "live", "phase": "Hypercare, moving to BAU", "milestones": {"live": {"date": "2026-02", "done": true, "approx": true, "note": "Deployed in Sprint 43 release (5 Feb 2026)"}}, "integration": {"dhis2_target": null}, "open_items": ["Users: confirm whether the admin account is still in use", "User creation troubleshooting: share with Pius"], "notes": "Data migration and cleaning completed. Ongoing support process clarified.", "detected": {"generated_at": "2026-10-06T13:31:31Z", "source_commit": "95c4b50", "site_folder": "sites/matsapha", "forms": ["F11-F12", "F29-F34", "F40", "F51-F52", "F59-F60", "F73"], "modules": ["registration", "chart", "appointments", "queues", "lab", "meds", "dispensing", "flags", "tasks", "labels", "reports", "ocl"], "frontend_modules_removed": ["@madiro/esm-mental-health-app", "@madiro/esm-nutrition-app", "@openmrs/esm-ward-app"], "registration": {"id_prefix": "SZ-", "id_example": "SZ-1024", "id_charset": "0123456789", "other_ids": ["Patient ID (required, Patient ID must be exactly 5 digits (e.g. 12345))"], "extra_fields": ["Gender identity", "Marital status", "Partnership status", "Occupation", "Occupation other", "Date of first visit", "Telephone number", "Second telephone number", "Email address", "2 emergency contacts"], "id_label_printing": true, "address": ["Country", "Region", "Inkhundla", "Address 1", "Address 2"], "default_language": "en", "languages": ["en"]}, "locations": ["Manzini Clinic"], "integration": {"config": "sites/matsapha/configs/openfn/mosul-project.yaml", "workflows": [{"name": "wf1-dhis2-omrs-migration", "cron": "0 0 * * *", "enabled": false}, {"name": "wf2-omrs-dhis2", "cron": "0 0 * * *", "enabled": false}], "version": "v1.5.1", "mapped_forms": ["F00", "F29-F34"], "identical_to": ["bunia"], "status": "template", "synced_forms": []}}, "body": ""}, {"id": "mosul", "name": "Mosul", "country": "Iraq", "status": "live", "phase": "Live, handover preparation", "milestones": {"live": {"date": "2024", "done": true}, "handover": {"date": "2026-10-31", "note": "Handover target end of October"}}, "custom_forms": [{"code": "MOS-DC", "name": "MH Discharge form", "program": "Mental Health", "need": "needed", "note": "MH field team to check what is needed"}], "integration": {"dhis2_target": "Mental Health tracker program (PII attributes removed before sync)", "note": "Staging project msf-lime-mosul-staging extends sync to the other hospital programs (WF3)."}, "open_items": ["Discharge form: MH field team to check what is needed", "Handover: clarify DB management (store DB dump, no live instance)"], "notes": "Build includes the full distro form library (except IPD admission).", "detected": {"generated_at": "2026-10-06T13:31:31Z", "source_commit": "95c4b50", "site_folder": "sites/mosul", "forms": ["F01-F76"], "modules": ["registration", "chart", "appointments", "queues", "lab", "meds", "dispensing", "mental_health", "nutrition", "flags", "labels", "reports", "ocl"], "frontend_modules_removed": ["@openmrs/esm-patient-task-list-app", "@openmrs/esm-ward-app"], "registration": {"id_prefix": "IQ146-", "id_example": "IQ146-1024", "id_charset": "0123456789", "other_ids": ["Legacy MSF ID (optional, Format: two letters, two-digit year, dash, two-digit month, dash, four-digit number (e.g. ER26-06-1234))"], "extra_fields": ["Current status", "Legal status", "Marital status", "Number of children", "Occupation", "Telephone number", "Email address", "Nationality", "2 emergency contacts"], "id_label_printing": true, "address": ["Country", "State/Province", "District", "City/Village", "Address 1"], "default_language": "en", "languages": ["en", "ar"]}, "locations": ["Mental Health (MH) / الصحة النفسية", "Registration Counter (REG) / تسجيل المستشفى"], "integration": {"config": "sites/mosul/configs/openfn/mosul-project.yaml", "workflows": [{"name": "wf1-dhis2-omrs-migration", "cron": "0 0 * * *", "enabled": false}, {"name": "wf2-omrs-dhis2", "cron": "00 17 * * *", "enabled": true}], "version": "v1.5.6", "version_date": "2026-06-15", "mapped_forms": ["F00", "F29-F34"], "metadata": "LIME EMR - Iraq Metadata - Release 1 - v2026-05-28.xlsx", "staging_config": "sites/mosul/configs/openfn/staging_project.yaml", "staging_forms": ["F00", "F08-F09", "F13", "F16-F18", "F22-F30", "F33", "F37-F38", "F40-F43", "F49-F50", "F55-F56", "F58-F69"], "status": "live", "synced_forms": ["F00", "F29-F34"]}}, "body": ""}, {"id": "ebola", "name": "Ebola response", "country": "Outbreak", "status": "preparation", "phase": "Tablet setup", "milestones": {}, "open_items": ["Finalize setup of 2 tablets"], "body": ""}, {"id": "mombasa", "name": "Mombasa", "country": "Kenya", "status": "preparation", "phase": "UAT server deployment", "milestones": {"requirements": {"date": null, "note": "General consultation form specs still to finalize"}, "uat": {"date": "2026-10-15", "note": "UAT server before mid-October"}}, "registration": {"id_prefix": null, "custom_form": true, "extra_fields": ["Site-specific registration form (F00) defined in the Mombasa metadata file"], "address": null, "languages": null}, "locations": ["Mombasa Health Facility"], "services": ["General consultation", "Mental health", "Infectious chronic diseases", "Family planning", "Health promotion", "Laboratory", "Dispensary"], "needs": {"forms_default": "not_needed", "forms": {"F11": "needed", "F12": "needed", "F29": "needed", "F30": "needed", "F31": "needed", "F32": "needed", "F33": "needed", "F34": "needed", "F40": "needed", "F51": "needed", "F52": "needed", "F53": "needed", "F54": "needed", "F55": "needed", "F56": "needed", "F57": "needed", "F58": "needed", "F59": "needed", "F60": "needed", "F91": "on_hold", "F92": "on_hold", "F35": "not_needed", "F44": "not_needed", "F73": "not_needed"}, "modules": {"registration": "needed", "chart": "needed", "lab": "needed", "meds": "needed", "dispensing": "needed", "ocl": "needed"}}, "form_notes": {"F35": "Not needed for the moment", "F44": "Merged with F73 into the new General consultation form", "F73": "Merged with F44 into the new General consultation form", "F59": "Likely not used, access given so the team can view content", "F60": "Likely not used, access given so the team can view content", "F91": "Not introduced until further discussions (security measures)", "F92": "Not introduced until further discussions (security measures)"}, "custom_forms": [{"code": "MBA-GC", "name": "General consultation", "program": "Outpatient", "need": "needed", "note": "Combines OPD General (F44) and Gynaecology (F73). Specs to finalize"}], "integration": {"dhis2_target": null, "need": "needed", "note": "DHIS2 needs to be confirmed with the project."}, "open_items": ["Profiles: clarify default profiles vs MSF-defined users", "General consultation form: finalize specs", "Certification: analyse what is really required and document the strategy", "FiWi kit from Geneva to discuss before hardware is sent", "IT checklist to discuss separately"], "notes": "Requirements from 'LIME - Mombasa - Activities and forms'. One location needed.", "body": ""}, {"id": "baghdad", "name": "Baghdad", "country": "Iraq", "status": "planned", "phase": "Feasibility & budgeting", "milestones": {}, "open_items": ["Feasibility assessment and budgeting"], "body": ""}, {"id": "homs", "name": "Homs", "country": "Syria", "status": "planned", "phase": "Feasibility & budgeting (urgent for PoA)", "milestones": {}, "open_items": ["Feasibility analysis and budgeting, urgent for PoA"], "body": ""}, {"id": "south-tehran", "name": "South Tehran", "country": "Iran", "status": "planned", "phase": "Feasibility & budgeting (urgent for PoA)", "milestones": {}, "open_items": ["Technical investigation of hosting infrastructure", "Feasibility analysis and budget, urgent for PoA", "New MedCo arriving"], "body": ""}, {"id": "vinnytsia", "name": "Vinnytsia", "country": "Ukraine", "status": "planned", "phase": "Feasibility & budgeting", "milestones": {}, "open_items": ["IT infrastructure: FiWi kit to confirm", "User acceptance to confirm, high change management risk", "Alternative: implement in the other new project (early stage)"], "body": ""}]}</script>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+
+<div x-data="matrix" class="min-h-full px-4 pt-6 pb-28 sm:px-6">
+<div class="mx-auto grid max-w-[1600px] gap-4">
+
+  <!-- Header -->
+  <header class="flex flex-wrap items-end justify-between gap-4">
+    <div class="grid min-w-0 gap-1">
+      <span class="text-[11px] font-semibold uppercase tracking-[.12em] text-muted"><b class="text-accent">LIME EMR</b> · MSF OCG implementations</span>
+      <h1 class="m-0 font-display text-[clamp(28px,4vw,40px)] font-extrabold leading-none [font-stretch:78%]">Site Matrix</h1>
+      <p class="m-0 max-w-[72ch] text-muted">What each site runs today, read from the repo, and what each site needs. Click any value to change it. Saving commits the site profile to GitHub under your own account, so every change is tracked.</p>
+    </div>
+    <div class="grid justify-items-end gap-1.5">
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs" :title="sourceTitle()">
+          <i class="h-2 w-2 rounded-full" :class="source === 'github' ? 'bg-on' : source === 'loading' ? 'bg-hold' : 'bg-no'"></i>
+          <span x-text="sourceLabel()"></span>
+        </span>
+        <template x-if="ghKind === 'rest' && !token">
+          <button type="button" @click="openSignIn()" class="rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg">Sign in to GitHub to edit</button>
+        </template>
+        <template x-if="ghKind === 'rest' && token">
+          <span class="inline-flex items-center gap-2 text-[13px]"><span class="text-muted" x-text="ghLogin ? '@' + ghLogin : 'Signed in'"></span><button type="button" @click="signOut()" class="text-muted underline">Sign out</button></span>
+        </template>
+        <button type="button" x-show="gh" @click="loadFromGitHub(true)" :disabled="source === 'loading'" class="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2 disabled:opacity-50">Refresh</button>
+        <button type="button" x-show="canEdit" @click="addOpen = !addOpen" class="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2">Add site</button>
+      </div>
+      <span class="font-mono text-[11.5px] text-muted" x-text="repoLabel()"></span>
+    </div>
+  </header>
+
+  <form x-show="addOpen" x-cloak @submit.prevent="addSite()" class="flex flex-wrap items-end gap-2 rounded-xl border border-dashed border-line bg-surface p-3">
+    <label class="grid gap-1 text-[12px] text-muted">Site name<input id="n-name" x-model="newSite.name" required class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg"></label>
+    <label class="grid gap-1 text-[12px] text-muted">Country<input id="n-country" x-model="newSite.country" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg"></label>
+    <button type="submit" class="rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg">Add as planned</button>
+    <span class="text-[12px] text-muted">Creates <code class="font-mono">profiles/&lt;site&gt;.md</code> when you save.</span>
+  </form>
+
+  <p x-show="notice" x-cloak class="m-0 flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 text-[13px]" :class="noticeTone === 'warn' ? 'border-hold bg-hold-bg text-hold' : 'border-line bg-surface text-muted'">
+    <span x-text="notice"></span>
+    <button type="button" x-show="noticeAction === 'allow'" @click="allowGitHub()" class="rounded-lg bg-fg px-3 py-1 text-[13px] font-semibold text-bg">Allow GitHub</button>
+    <button type="button" x-show="noticeAction === 'manage'" @click="managePermissions()" class="rounded-lg bg-fg px-3 py-1 text-[13px] font-semibold text-bg">Open permissions</button>
+    <button type="button" x-show="noticeAction === 'retry'" @click="loadFromGitHub(true)" class="underline">Try again</button>
+  </p>
+
+  <!-- KPIs -->
+  <section class="grid grid-cols-[repeat(auto-fit,minmax(165px,1fr))] gap-px overflow-hidden rounded-xl border border-line bg-line" aria-label="Portfolio summary">
+    <template x-for="k in kpis()" :key="k.k">
+      <div class="grid content-start gap-0.5 bg-surface px-3.5 py-3">
+        <span class="text-[11px] font-semibold uppercase tracking-[.08em] text-muted" x-text="k.k"></span>
+        <span class="font-display text-[26px] font-bold leading-tight tabular-nums [font-stretch:80%]" x-html="k.v"></span>
+        <span class="text-xs text-muted" x-text="k.d"></span>
+      </div>
+    </template>
+  </section>
+
+  <!-- Controls -->
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+    <div class="inline-flex overflow-hidden rounded-lg border border-line bg-surface" role="group" aria-label="Filter sites by status">
+      <template x-for="f in ['all','live','preparation','planned']" :key="f">
+        <button type="button" @click="statusFilter = f" :aria-pressed="statusFilter === f"
+          class="border-r border-line px-3 py-1.5 text-[13px] capitalize last:border-r-0"
+          :class="statusFilter === f ? 'bg-fg text-bg' : 'hover:bg-surface-2'" x-text="f === 'all' ? 'All sites' : f"></button>
+      </template>
+    </div>
+    <label for="q" class="flex min-w-0 max-w-[320px] flex-[1_1_200px] items-center gap-2 rounded-lg border border-line bg-surface px-2.5">
+      <span class="text-muted" aria-hidden="true">⌕</span>
+      <input id="q" type="search" x-model.debounce.200ms="q" placeholder="Find a form, program or code" class="w-full min-w-0 bg-transparent py-1.5 outline-none">
+    </label>
+    <label for="onlyUsed" class="inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-muted"><input id="onlyUsed" type="checkbox" x-model="onlyUsed"> Only forms in use or needed</label>
+    <div class="flex gap-2">
+      <button type="button" class="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2" @click="expandAll(true)">Expand all</button>
+      <button type="button" class="rounded-lg border border-line bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2" @click="expandAll(false)">Collapse all</button>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted" aria-label="Legend">
+    <span class="inline-flex items-center gap-1.5"><i class="chip on not-italic">On</i> In the site build</span>
+    <span class="inline-flex items-center gap-1.5"><i class="chip todo not-italic">Needed</i> Needed, not built yet</span>
+    <span class="inline-flex items-center gap-1.5"><i class="chip hold not-italic">Hold</i> On hold</span>
+    <span class="inline-flex items-center gap-1.5"><i class="chip remove not-italic">Remove?</i> Built but marked not needed</span>
+    <span class="inline-flex items-center gap-1.5"><i class="chip no not-italic">–</i> Not needed</span>
+    <span class="inline-flex items-center gap-1.5"><i class="chip unk not-italic">·</i> No decision</span>
+    <span class="inline-flex items-center gap-1.5"><i class="d2 not-italic">D2</i> Synced to DHIS2 <i class="d2 stg not-italic">D2</i> staging</span>
+    <span class="inline-flex items-center gap-1.5"><i class="rounded bg-new-bg px-1.5 text-[10px] font-bold uppercase not-italic text-new">New</i> Site-specific</span>
+    <span class="inline-flex items-center gap-1.5"><i class="pending inline-block h-3 w-3 rounded bg-surface-2"></i> Not saved yet</span>
+  </div>
+
+  <!-- Matrix -->
+  <div class="max-h-[calc(100vh-120px)] min-h-[340px] overflow-auto rounded-xl border border-line bg-surface">
+    <table class="matrix border-separate border-spacing-0 tabular-nums">
+      <thead>
+        <tr>
+          <th scope="col" class="lab w-[270px] min-w-[220px] max-w-[270px] border-b-2 border-r border-b-fg border-r-line px-3 py-2 text-left align-bottom text-[11px] font-semibold uppercase tracking-[.08em] text-muted">Configuration</th>
+          <template x-for="s in shown()" :key="s.id">
+            <th scope="col" class="w-[156px] min-w-[156px] border-b-2 border-r border-b-fg border-r-line px-2.5 py-2 text-left align-bottom" :class="hasPending(s.id) ? 'pending' : ''">
+              <div class="grid gap-1">
+                <button type="button" @click="edit($event, s.id, 'status', 'status', 'Status')" class="inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[.06em]"
+                  :class="[statusTone(s.status), canEdit ? 'editable' : '', isPending(s.id, 'status') ? 'pending' : '']" :title="canEdit ? 'Change status' : ''">
+                  <i class="h-1.5 w-1.5 rounded-full bg-current"></i><span x-text="s.status"></span></button>
+                <button type="button" @click="openSite(s.id)" class="group grid gap-0.5 text-left">
+                  <span class="font-display text-[17px] font-bold leading-tight [font-stretch:82%] group-hover:underline" x-text="s.name"></span>
+                  <span class="text-xs text-muted" x-text="s.country || '–'"></span>
+                </button>
+              </div>
+            </th>
+          </template>
+        </tr>
+      </thead>
+
+      <!-- Timeline -->
+      <tbody>
+        <tr class="sum">
+          <th scope="row" class="lab border-r border-line p-0 text-left">
+            <button type="button" @click="toggle('time')" class="flex w-full items-baseline gap-2 px-3 py-2.5 text-left" :aria-expanded="open.time">
+              <span class="text-muted transition" :class="open.time ? '' : '-rotate-90'">▾</span>
+              <span class="grid"><span class="font-display text-[15px] font-bold [font-stretch:85%]">Status & milestones</span><span class="text-[11.5px] font-normal text-muted">Next date per site</span></span>
+            </button>
+          </th>
+          <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top text-[13px]" x-html="timelineSummary(s)"></td></template>
+        </tr>
+        <template x-for="r in (open.time ? milestoneRows : [])" :key="r[0]">
+          <tr>
+            <th scope="row" class="lab border-r border-line py-2 pl-8 pr-3 text-left align-top"><span class="block text-[13px] font-semibold" x-text="r[1]"></span><span class="block text-[11.5px] font-normal text-muted" x-text="r[2]"></span></th>
+            <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top text-[13px]" :class="[canEdit ? 'editable' : '', isPending(s.id, 'milestones.' + r[0], true) ? 'pending' : '']"
+              @click="edit($event, s.id, 'milestone', 'milestones.' + r[0], r[1])" x-html="milestoneCell(s, r[0])"></td></template>
+          </tr>
+        </template>
+        <tr x-show="open.time">
+          <th scope="row" class="lab border-r border-line py-2 pl-8 pr-3 text-left align-top"><span class="block text-[13px] font-semibold">Phase</span><span class="block text-[11.5px] font-normal text-muted">Current step</span></th>
+          <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top text-[13px]" :class="[canEdit ? 'editable' : '', isPending(s.id, 'phase') ? 'pending' : '']"
+            @click="edit($event, s.id, 'text', 'phase', 'Phase')" x-text="s.phase || '·'"></td></template>
+        </tr>
+        <tr x-show="open.time">
+          <th scope="row" class="lab border-r border-line py-2 pl-8 pr-3 text-left align-top"><span class="block text-[13px] font-semibold">Open items</span><span class="block text-[11.5px] font-normal text-muted">Edit in the site panel</span></th>
+          <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top text-[13px] text-muted" :class="canEdit ? 'editable' : ''" @click="openSite(s.id)"
+            x-text="(s.open_items || []).length ? s.open_items.length + ' open' : '·'"></td></template>
+        </tr>
+      </tbody>
+
+      <!-- Registration -->
+      <tbody>
+        <tr class="sum">
+          <th scope="row" class="lab border-r border-line p-0 text-left">
+            <button type="button" @click="toggle('reg')" class="flex w-full items-baseline gap-2 px-3 py-2.5 text-left" :aria-expanded="open.reg">
+              <span class="text-muted transition" :class="open.reg ? '' : '-rotate-90'">▾</span>
+              <span class="grid"><span class="font-display text-[15px] font-bold [font-stretch:85%]">Registration & patient ID</span><span class="text-[11.5px] font-normal text-muted">MSF ID prefix and languages</span></span>
+            </button>
+          </th>
+          <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top" :class="[canEdit ? 'editable' : '', isPending(s.id, 'registration.id_prefix') ? 'pending' : '']"
+            @click="edit($event, s.id, 'text', 'registration.id_prefix', 'MSF ID prefix')" x-html="regSummary(s)"></td></template>
+        </tr>
+        <template x-for="r in (open.reg ? regRows : [])" :key="r[0]">
+          <tr>
+            <th scope="row" class="lab border-r border-line py-2 pl-8 pr-3 text-left align-top"><span class="block text-[13px] font-semibold" x-text="r[1]"></span><span class="block text-[11.5px] font-normal text-muted" x-text="r[2]"></span></th>
+            <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top text-[12.5px]" :class="[canEdit ? 'editable' : '', isPending(s.id, r[4]) ? 'pending' : '']"
+              @click="edit($event, s.id, r[3], r[4], r[1])" x-html="regCell(s, r[0])"></td></template>
+          </tr>
+        </template>
+      </tbody>
+
+      <!-- Modules -->
+      <tbody>
+        <tr class="sum">
+          <th scope="row" class="lab border-r border-line p-0 text-left">
+            <button type="button" @click="toggle('mods')" class="flex w-full items-baseline gap-2 px-3 py-2.5 text-left" :aria-expanded="open.mods">
+              <span class="text-muted transition" :class="open.mods ? '' : '-rotate-90'">▾</span>
+              <span class="grid"><span class="font-display text-[15px] font-bold [font-stretch:85%]">Modules</span><span class="text-[11.5px] font-normal text-muted" x-text="lib.modules.length + ' key modules'"></span></span>
+            </button>
+          </th>
+          <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top text-[13px]" x-html="countSummary(s.stats.modules)"></td></template>
+        </tr>
+        <template x-for="m in (open.mods ? lib.modules : [])" :key="m.id">
+          <tr>
+            <th scope="row" class="lab border-r border-line py-1.5 pl-8 pr-3 text-left text-[13px] font-normal" x-text="m.name"></th>
+            <template x-for="s in shown()" :key="s.id">
+              <td class="border-r border-line px-2.5 py-1.5 text-center align-middle">
+                <button type="button" class="chip" :class="[s.modCell[m.id].st, canEdit ? 'editable' : '', isPending(s.id, 'needs.modules.' + m.id) ? 'pending' : '']" :title="s.modCell[m.id].title"
+                  @click="edit($event, s.id, 'need', 'needs.modules.' + m.id, m.name)" x-text="label(s.modCell[m.id].st)"></button>
+              </td>
+            </template>
+          </tr>
+        </template>
+      </tbody>
+
+      <!-- DHIS2 -->
+      <tbody>
+        <tr class="sum">
+          <th scope="row" class="lab border-r border-line p-0 text-left">
+            <button type="button" @click="toggle('int')" class="flex w-full items-baseline gap-2 px-3 py-2.5 text-left" :aria-expanded="open.int">
+              <span class="text-muted transition" :class="open.int ? '' : '-rotate-90'">▾</span>
+              <span class="grid"><span class="font-display text-[15px] font-bold [font-stretch:85%]">DHIS2 integration</span><span class="text-[11.5px] font-normal text-muted">OpenFn sync status</span></span>
+            </button>
+          </th>
+          <template x-for="s in shown()" :key="s.id">
+            <td class="border-r border-line px-2.5 py-2 align-top text-[13px]">
+              <button type="button" class="chip" :class="[s.intCell.st, canEdit ? 'editable' : '', isPending(s.id, 'integration.need') ? 'pending' : '']" :title="s.intCell.title"
+                @click="edit($event, s.id, 'need', 'integration.need', 'DHIS2 integration')" x-text="s.intCell.label"></button>
+              <span class="mt-1 block text-[11.5px] text-muted" x-text="s.intCell.sub"></span>
+            </td>
+          </template>
+        </tr>
+        <template x-for="r in (open.int ? intRows : [])" :key="r[0]">
+          <tr>
+            <th scope="row" class="lab border-r border-line py-2 pl-8 pr-3 text-left align-top"><span class="block text-[13px] font-semibold" x-text="r[1]"></span><span class="block text-[11.5px] font-normal text-muted" x-text="r[2]"></span></th>
+            <template x-for="s in shown()" :key="s.id"><td class="border-r border-line px-2.5 py-2 align-top text-[12.5px]" :class="[r[0] === 'target' && canEdit ? 'editable' : '', r[0] === 'target' && isPending(s.id, 'integration.dhis2_target') ? 'pending' : '']"
+              @click="r[0] === 'target' && edit($event, s.id, 'text', 'integration.dhis2_target', 'DHIS2 target')" x-html="intCell(s, r[0])"></td></template>
+          </tr>
+        </template>
+      </tbody>
+
+      <!-- Forms -->
+      <tbody>
+        <tr class="sum">
+          <th scope="row" class="lab border-r border-line p-0 text-left">
+            <button type="button" @click="toggle('forms')" class="flex w-full items-baseline gap-2 px-3 py-2.5 text-left" :aria-expanded="open.forms || !!q">
+              <span class="text-muted transition" :class="(open.forms || q) ? '' : '-rotate-90'">▾</span>
+              <span class="grid"><span class="font-display text-[15px] font-bold [font-stretch:85%]">Programs & forms</span><span class="text-[11.5px] font-normal text-muted" x-text="formRows.length + ' forms in ' + programs.length + ' programs'"></span></span>
+            </button>
+          </th>
+          <template x-for="s in shown()" :key="s.id">
+            <td class="border-r border-line px-2.5 py-2 align-top text-[13px]">
+              <span x-html="countSummary(s.stats.forms)"></span>
+              <span class="mt-0.5 block text-[11.5px] text-muted" x-text="s.stats.reuse === null ? 'No forms scoped' : s.stats.reuse + '% from shared library'"></span>
+            </td>
+          </template>
+        </tr>
+        <template x-for="row in formTable()" :key="row.k">
+          <tr>
+            <th scope="row" class="lab border-r border-line p-0 text-left text-[13px]">
+              <template x-if="row.type === 'prog'">
+                <button type="button" @click="openProg[row.p.name] = !openProg[row.p.name]" class="flex w-full items-baseline gap-2 py-2 pl-6 pr-3 text-left font-semibold" :aria-expanded="progOpen(row.p)">
+                  <span class="text-[11px] text-muted transition" :class="progOpen(row.p) ? '' : '-rotate-90'">▾</span>
+                  <span x-text="row.p.name"></span><span class="text-xs font-normal text-muted" x-text="row.p.forms.length"></span>
+                </button>
+              </template>
+              <template x-if="row.type === 'form'">
+                <span class="block py-1.5 pl-11 pr-3 font-normal">
+                  <span class="mr-1.5 font-mono text-[11.5px] text-muted" x-text="row.f.custom ? '' : row.f.code"></span><span x-text="row.f.name"></span>
+                  <span x-show="row.f.custom" class="ml-1 rounded bg-new-bg px-1.5 text-[10px] font-bold uppercase text-new" :title="'Site-specific form for ' + row.f.owner">New</span>
+                  <span x-show="row.f.in_library === false && !row.f.custom" class="ml-1 text-[11px] text-muted" title="Not yet in the distro form library">◌</span>
+                </span>
+              </template>
+            </th>
+            <template x-for="s in shown()" :key="s.id">
+              <td class="whitespace-nowrap border-r border-line px-2.5 py-1.5 text-center align-middle">
+                <template x-if="row.type === 'prog'">
+                  <button type="button" class="chip" :class="[progCell(s, row.p).st, canEdit ? 'editable' : '']" :title="progCell(s, row.p).title"
+                    @click="edit($event, s.id, 'need', null, row.p.name + ' (all forms)', row.p)" x-text="progCell(s, row.p).label"></button>
+                </template>
+                <template x-if="row.type === 'form'">
+                  <span>
+                    <button type="button" class="chip" :class="[formCell(s, row.f).st, canEdit && formPath(row.f, s) ? 'editable' : '', isPending(s.id, formPath(row.f, s)) ? 'pending' : '']" :title="formCell(s, row.f).title"
+                      @click="formPath(row.f, s) && edit($event, s.id, 'need', formPath(row.f, s), row.f.name, null, row.f)" x-text="label(formCell(s, row.f).st)"></button><span x-show="formCell(s, row.f).sync" class="d2" :class="formCell(s, row.f).sync === 'staging' ? 'stg' : ''" :title="formCell(s, row.f).sync === 'staging' ? 'Mapped in the staging OpenFn project only' : 'Synced to DHIS2 by the production OpenFn workflow'">D2</span><span x-show="formCell(s, row.f).note" class="ml-0.5 cursor-help text-[11px] text-muted" :title="formCell(s, row.f).note">ⓘ</span>
+                  </span>
+                </template>
+              </td>
+            </template>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="grid gap-1 text-xs text-muted">
+    <span>"On" comes from each site's build (pom.xml, configs, OpenFn project) and is refreshed by the site-profiles skill. Everything you change here is a decision stored in <code class="font-mono">docs/site-matrix/profiles/&lt;site&gt;.md</code>. Reuse = shared library forms ÷ all forms on or needed at the site.</span>
+  </footer>
+</div>
+
+<!-- Editor popover -->
+<div x-show="popOpen" x-cloak class="fixed inset-0 z-40" @click="popOpen = false"></div>
+<div x-show="popOpen" x-cloak @keydown.escape.window="popOpen = false" class="fixed z-50 w-72 rounded-xl border border-line bg-surface p-3 shadow-xl" :style="`left:${pop.x}px;top:${pop.y}px`" role="dialog" aria-label="Edit value">
+  <template x-if="popOpen">
+    <div class="grid gap-2">
+      <div><p class="m-0 text-[13px] font-semibold" x-text="pop.title"></p><p class="m-0 text-[11.5px] text-muted" x-text="siteById(pop.site).name"></p></div>
+      <template x-if="pop.kind === 'need'">
+        <div class="grid gap-0.5">
+          <template x-for="o in needOptions" :key="o[0] || 'clear'">
+            <button type="button" @click="chooseNeed(o[0])" class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] hover:bg-surface-2">
+              <span class="chip" :class="o[2]" x-text="o[3]"></span><span x-text="o[1]"></span>
+            </button>
+          </template>
+        </div>
+      </template>
+      <template x-if="pop.kind === 'status'">
+        <div class="grid gap-0.5">
+          <template x-for="o in ['live','preparation','planned','closed']" :key="o">
+            <button type="button" @click="set(pop.site, 'status', o); popOpen = false" class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] capitalize hover:bg-surface-2">
+              <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase" :class="statusTone(o)"><i class="h-1.5 w-1.5 rounded-full bg-current"></i><span x-text="o"></span></span>
+            </button>
+          </template>
+        </div>
+      </template>
+      <template x-if="pop.kind === 'text' || pop.kind === 'list'">
+        <form class="grid gap-2" @submit.prevent="saveText()">
+          <input id="pop-text" x-ref="popText" x-model="pop.value" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px]" :placeholder="pop.placeholder">
+          <span x-show="pop.kind === 'list'" class="text-[11.5px] text-muted" x-text="pop.path.endsWith('address') ? 'Levels separated by ›' : 'Separate values with commas'"></span>
+          <span x-show="pop.repo" class="text-[11.5px] text-muted" x-text="'In the repo: ' + pop.repo"></span>
+          <div class="flex gap-2"><button type="submit" class="rounded-lg bg-fg px-3 py-1 text-[13px] font-semibold text-bg">Apply</button><button type="button" class="rounded-lg border border-line px-3 py-1 text-[13px]" @click="pop.value = ''; saveText()">Clear</button></div>
+        </form>
+      </template>
+      <template x-if="pop.kind === 'milestone'">
+        <form class="grid gap-2" @submit.prevent="saveMilestone()">
+          <label class="grid gap-1 text-[12px] text-muted">Date (YYYY-MM-DD, YYYY-MM or YYYY)<input id="pop-date" x-ref="popText" x-model="pop.value" placeholder="2026-11-30" class="rounded-lg border border-line bg-surface px-2 py-1.5 font-mono text-[13px] text-fg"></label>
+          <label class="inline-flex items-center gap-2 text-[13px]"><input id="pop-done" type="checkbox" x-model="pop.done"> Done</label>
+          <label class="grid gap-1 text-[12px] text-muted">Note<input id="pop-note" x-model="pop.note" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg"></label>
+          <p x-show="pop.error" class="m-0 text-[12px] text-crit" x-text="pop.error"></p>
+          <div class="flex gap-2"><button type="submit" class="rounded-lg bg-fg px-3 py-1 text-[13px] font-semibold text-bg">Apply</button><button type="button" class="rounded-lg border border-line px-3 py-1 text-[13px]" @click="pop.value = ''; pop.done = false; pop.note = ''; saveMilestone()">Clear</button></div>
+        </form>
+      </template>
+    </div>
+  </template>
+</div>
+
+<!-- Site drawer -->
+<div x-show="drawer" x-cloak class="fixed inset-0 z-40 bg-shade" @click="drawer = null"></div>
+<aside x-show="drawer" x-cloak @keydown.escape.window="drawer = null" class="fixed inset-y-0 right-0 z-50 flex w-[min(520px,100vw)] flex-col border-l border-line bg-surface shadow-2xl" aria-label="Site details">
+  <template x-if="drawer && ds">
+    <div class="flex min-h-0 flex-1 flex-col">
+      <header class="flex items-start justify-between gap-3 border-b border-line px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        <div class="grid gap-1">
+          <span class="text-[11px] font-semibold uppercase tracking-[.1em] text-muted" x-text="ds.status + ' · ' + (ds.country || '')"></span>
+          <h2 class="m-0 font-display text-[26px] font-extrabold leading-none [font-stretch:80%]" x-text="ds.name"></h2>
+          <span class="text-[13px] text-muted" x-text="ds.stats.forms.on + ' forms on · ' + ds.stats.forms.todo + ' needed · ' + (ds.stats.reuse === null ? 'no forms scoped' : ds.stats.reuse + '% from library')"></span>
+        </div>
+        <button type="button" @click="drawer = null" class="h-8 w-8 flex-none rounded-lg border border-line bg-surface-2" aria-label="Close">✕</button>
+      </header>
+      <nav class="flex gap-1 overflow-x-auto border-b border-line px-4" role="tablist">
+        <template x-for="t in [['overview','Overview'],['reuse','Reuse'],['history','History'],['yaml','Profile']]" :key="t[0]">
+          <button type="button" role="tab" :aria-selected="drawer.tab === t[0]" @click="setTab(t[0])" class="border-b-2 px-3 py-2 text-[13px]"
+            :class="drawer.tab === t[0] ? 'border-accent font-semibold' : 'border-transparent text-muted hover:text-fg'" x-text="t[1]"></button>
+        </template>
+      </nav>
+      <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+
+        <div x-show="drawer.tab === 'overview'" class="grid gap-4">
+          <div class="grid grid-cols-2 gap-3">
+            <label class="grid gap-1 text-[12px] text-muted">Site name
+              <input id="f-name" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg" :disabled="!canEdit" :value="ds.name || ''" @change="set(ds.id, 'name', $event.target.value.trim() || null)"></label>
+            <label class="grid gap-1 text-[12px] text-muted">Country
+              <input id="f-country" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg" :disabled="!canEdit" :value="ds.country || ''" @change="set(ds.id, 'country', $event.target.value.trim() || null)"></label>
+          </div>
+          <label class="grid gap-1 text-[12px] text-muted">Open items, one per line
+            <textarea id="f-open" rows="6" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg" :disabled="!canEdit" :value="(ds.open_items || []).join('\n')"
+              @change="set(ds.id, 'open_items', $event.target.value.split('\n').map(x => x.trim()).filter(Boolean))"></textarea></label>
+          <label class="grid gap-1 text-[12px] text-muted">Notes
+            <textarea id="f-notes" rows="4" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg" :disabled="!canEdit" :value="ds.notes || ''" @change="set(ds.id, 'notes', $event.target.value.trim() || null)"></textarea></label>
+          <p class="m-0 text-[12px] text-muted">Status, phase, dates, patient ID and needs are edited directly in the matrix.</p>
+        </div>
+
+        <div x-show="drawer.tab === 'reuse'" class="grid gap-4">
+          <p class="m-0 text-[13px]">Start from a site that already runs what this one needs. Every form and module that is on or needed at the source becomes needed here. You can then remove what does not apply before saving.</p>
+          <label class="grid gap-1 text-[12px] text-muted">Copy from
+            <select id="f-copy-src" x-model="copySrc" class="rounded-lg border border-line bg-surface px-2 py-1.5 text-[13px] text-fg">
+              <option value="">Choose a site</option>
+              <template x-for="o in view.filter(x => x.id !== ds.id)" :key="o.id"><option :value="o.id" x-text="o.name + ' (' + o.stats.forms.on + ' forms on)'"></option></template>
+            </select></label>
+          <div class="flex flex-wrap gap-4 text-[13px]">
+            <label class="inline-flex items-center gap-1.5"><input id="f-copy-forms" type="checkbox" x-model="copyForms"> Forms</label>
+            <label class="inline-flex items-center gap-1.5"><input id="f-copy-mods" type="checkbox" x-model="copyMods"> Modules</label>
+          </div>
+          <p x-show="copySrc" class="m-0 rounded-lg bg-surface-2 px-3 py-2 text-[12.5px]" x-text="copySrc ? copyPreview(ds.id) : ''"></p>
+          <button type="button" class="w-fit rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg disabled:opacity-40" :disabled="!canEdit || !copySrc || (!copyForms && !copyMods)" @click="copyNeeds(ds.id)">Copy needs</button>
+        </div>
+
+        <div x-show="drawer.tab === 'history'" class="grid gap-2">
+          <p class="m-0 text-[12.5px] text-muted" x-text="'Commits that changed ' + profilePath(ds.id) + ' on ' + cfg.branch + '.'"></p>
+          <p x-show="history.state === 'loading'" class="m-0 text-[13px] text-muted">Loading history…</p>
+          <p x-show="history.state === 'error'" class="m-0 text-[13px] text-hold" x-text="history.error"></p>
+          <p x-show="history.state === 'none'" class="m-0 text-[13px] text-muted">History needs GitHub access.</p>
+          <ul class="m-0 grid list-none gap-1.5 p-0">
+            <template x-for="c in history.items" :key="c.sha">
+              <li class="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px]">
+                <a :href="c.url" target="_blank" rel="noopener" class="block font-semibold hover:underline" x-text="c.title"></a>
+                <span class="block text-muted"><span x-text="c.who"></span> · <span x-text="c.when"></span> · <span class="font-mono" x-text="c.sha.slice(0, 7)"></span></span>
+              </li>
+            </template>
+          </ul>
+        </div>
+
+        <div x-show="drawer.tab === 'yaml'" class="grid gap-2">
+          <p class="m-0 text-[12.5px] text-muted">The profile as it will be committed, unsaved changes included. The <code class="font-mono">detected</code> block is generated from the repo and left as is.</p>
+          <div class="flex gap-2"><button type="button" class="rounded-lg border border-line bg-surface-2 px-3 py-1 text-[12.5px]" @click="copyText(previewProfile(ds.id), $refs.yaml)">Copy</button></div>
+          <pre x-ref="yaml" class="m-0 max-h-[60vh] overflow-auto rounded-lg border border-line bg-surface-2 p-3 font-mono text-[11.5px] leading-relaxed" x-text="drawer.tab === 'yaml' ? previewProfile(ds.id) : ''"></pre>
+        </div>
+      </div>
+    </div>
+  </template>
+</aside>
+
+<!-- Review changes -->
+<div x-show="reviewOpen" x-cloak class="fixed inset-0 z-40 bg-shade" @click="reviewOpen = false"></div>
+<aside x-show="reviewOpen" x-cloak @keydown.escape.window="reviewOpen = false" class="fixed inset-y-0 right-0 z-50 flex w-[min(520px,100vw)] flex-col border-l border-line bg-surface shadow-2xl" aria-label="Unsaved changes">
+  <header class="flex items-start justify-between gap-3 border-b border-line px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <div class="grid gap-1">
+      <h2 class="m-0 font-display text-[24px] font-extrabold leading-none [font-stretch:80%]">Unsaved changes</h2>
+      <span class="text-[13px] text-muted">One commit per site profile when you save. Kept in this browser until then.</span>
+    </div>
+    <button type="button" @click="reviewOpen = false" class="h-8 w-8 flex-none rounded-lg border border-line bg-surface-2" aria-label="Close">✕</button>
+  </header>
+  <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+    <p x-show="!pendingCount()" class="m-0 text-[13px] text-muted">Nothing to save.</p>
+    <template x-for="g in pendingList()" :key="g.site">
+      <section class="mb-4">
+        <div class="mb-1.5 flex items-center justify-between gap-2">
+          <h3 class="m-0 text-[14px] font-bold" x-text="g.name + (g.isNew ? ' (new site)' : '')"></h3>
+          <span class="text-[12px]" :class="g.status && g.status.startsWith('Saved') ? 'text-on' : 'text-hold'" x-text="g.status || ''"></span>
+          <button type="button" class="text-[12px] text-muted underline" @click="discardSite(g.site)">Discard</button>
+        </div>
+        <ul class="m-0 grid list-none gap-1 p-0">
+          <template x-for="c in g.items" :key="c.path">
+            <li class="flex items-start justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2 text-[12.5px]">
+              <span class="min-w-0"><span class="block font-semibold" x-text="c.label"></span><span class="block text-muted" x-text="c.from + ' → ' + c.to"></span></span>
+              <button type="button" class="flex-none text-[12px] text-muted underline" @click="undo(g.site, c.path)">Undo</button>
+            </li>
+          </template>
+        </ul>
+      </section>
+    </template>
+  </div>
+</aside>
+
+<!-- Save bar -->
+<div x-show="pendingCount() || saving" x-cloak class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_var(--shade)] backdrop-blur">
+  <form class="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-2" @submit.prevent="saveAll()">
+    <span class="text-[13px]"><b x-text="pendingCount()"></b> unsaved change<span x-show="pendingCount() !== 1">s</span> <span class="text-muted" x-text="'· ' + pendingSites()"></span></span>
+    <button type="button" @click="reviewOpen = true" class="text-[13px] text-muted underline">Review</button>
+    <input id="commit-note" x-model="commitNote" placeholder="Why? (added to the commit message, optional)" class="min-w-0 flex-[1_1_240px] rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px]">
+    <span class="text-[12px] text-muted" x-show="ghLogin" x-text="'Commits as @' + ghLogin"></span>
+    <button type="button" @click="discardAll()" :disabled="saving" class="rounded-lg border border-line px-3 py-1.5 text-[13px] disabled:opacity-40">Discard</button>
+    <button type="button" x-show="ghKind === 'rest' && !token" @click="openSignIn()" class="rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg">Sign in to save</button>
+    <button type="submit" x-show="!(ghKind === 'rest' && !token)" :disabled="saving || !canEdit" class="rounded-lg bg-new px-4 py-1.5 text-[13px] font-semibold text-surface disabled:opacity-50" x-text="saving ? 'Saving…' : 'Save to GitHub'"></button>
+  </form>
+</div>
+
+<!-- GitHub sign-in (standalone page) -->
+<div x-show="signInOpen" x-cloak class="fixed inset-0 z-[55] bg-shade" @click="signInOpen = false"></div>
+<div x-show="signInOpen" x-cloak @keydown.escape.window="signInOpen = false" role="dialog" aria-labelledby="signin-title"
+  class="fixed left-1/2 top-[max(5vh,env(safe-area-inset-top))] z-[56] grid max-h-[90vh] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 gap-3 overflow-y-auto rounded-xl border border-line bg-surface p-5 shadow-2xl">
+  <h2 id="signin-title" class="m-0 font-display text-[22px] font-extrabold leading-none [font-stretch:80%]">Sign in to GitHub</h2>
+  <p class="m-0 text-[13px] text-muted">Your changes are saved as commits by your GitHub account, so the history shows who changed what. The page talks to GitHub directly with a personal access token. It is kept in this browser only and sent only to api.github.com.</p>
+  <ol class="m-0 grid gap-1.5 pl-5 text-[13px]">
+    <li><a class="font-semibold text-todo underline" target="_blank" rel="noopener" :href="'https://github.com/settings/personal-access-tokens/new?name=' + encodeURIComponent('LIME Site Matrix') + '&description=' + encodeURIComponent('Edit site profiles in ' + cfg.owner + '/' + cfg.repo) + '&target_name=' + encodeURIComponent(cfg.owner) + '&contents=write'">Create a fine-grained token</a> on GitHub.</li>
+    <li>Resource owner: <b x-text="cfg.owner"></b>. Repository access: only <b x-text="cfg.repo"></b>.</li>
+    <li>Repository permissions: <b>Contents: Read and write</b>. Nothing else is needed.</li>
+    <li>Generate the token and paste it below.</li>
+  </ol>
+  <form class="grid gap-2" @submit.prevent="signIn()">
+    <label for="gh-token" class="text-[12px] text-muted">Personal access token</label>
+    <input id="gh-token" type="password" autocomplete="off" spellcheck="false" x-model="tokenInput" placeholder="github_pat_…" class="rounded-lg border border-line bg-surface px-2.5 py-1.5 font-mono text-[13px]">
+    <label class="inline-flex items-center gap-2 text-[13px]"><input id="gh-remember" type="checkbox" x-model="rememberToken"> Remember on this device (otherwise until you close the tab)</label>
+    <p x-show="signInError" class="m-0 text-[12.5px] text-crit" x-text="signInError"></p>
+    <div class="flex gap-2"><button type="submit" :disabled="signingIn || !tokenInput.trim()" class="rounded-lg bg-fg px-3 py-1.5 text-[13px] font-semibold text-bg disabled:opacity-50" x-text="signingIn ? 'Checking…' : 'Sign in'"></button><button type="button" @click="signInOpen = false" class="rounded-lg border border-line px-3 py-1.5 text-[13px]">Cancel</button></div>
+  </form>
+</div>
+
+<div x-show="toast" x-cloak x-transition.opacity class="fixed bottom-24 left-1/2 z-[60] max-w-[90vw] -translate-x-1/2 rounded-lg bg-fg px-3 py-2 text-[13px] text-bg" role="status" x-html="toast"></div>
+</div>
+
+<script>
+document.addEventListener("alpine:init", function () {
+  var D = JSON.parse(document.getElementById("lime-data").textContent);
+  var CFG = D.repo; // {owner, repo, branch, dir}
+  var GH = "github";
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var LABEL = { on: "On", todo: "Needed", hold: "Hold", remove: "Remove?", no: "–", unk: "·", template: "Template" };
+  var NEED_TEXT = { needed: "Needed", not_needed: "Not needed", on_hold: "On hold" };
+  var ORDER = ["id", "name", "country", "status", "phase", "milestones", "registration", "locations", "services",
+    "needs", "form_notes", "custom_forms", "integration", "open_items", "notes"];
+  var HEADER = "# Site profile. Everything above `detected` is maintained by people (site matrix UI or by hand).\n" +
+    "# `detected` is generated by scripts/site-profiles/extract.py from the repo: do not edit it.\n";
+  var DRAFT_KEY = "lime-site-matrix-draft:" + CFG.owner + "/" + CFG.repo + "@" + CFG.branch;
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
+  function same(a, b) { return JSON.stringify(a == null ? null : a) === JSON.stringify(b == null ? null : b); }
+  function getPath(o, p) { var k = p.split("."); for (var i = 0; i < k.length; i++) { if (o == null || typeof o !== "object") return undefined; o = o[k[i]]; } return o; }
+  function setPath(o, p, v) {
+    var k = p.split("."), i;
+    for (i = 0; i < k.length - 1; i++) { if (!o[k[i]] || typeof o[k[i]] !== "object") o[k[i]] = {}; o = o[k[i]]; }
+    if (v == null) delete o[k[i]]; else o[k[i]] = v;
+  }
+  function plain(v) {
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    if (Array.isArray(v)) return v.map(plain);
+    if (v && typeof v === "object") { var o = {}; Object.keys(v).forEach(function (k) { o[k] = plain(v[k]); }); return o; }
+    return v;
+  }
+  function expand(list) {
+    var out = [];
+    (list || []).forEach(function (x) {
+      var m = /^F(\d+)-F(\d+)$/.exec(x);
+      if (m) for (var i = +m[1]; i <= +m[2]; i++) out.push("F" + (i < 10 ? "0" : "") + i); else out.push(x);
+    });
+    return out;
+  }
+  function parseD(d) {
+    if (!d) return null;
+    var p = String(d).split("-");
+    if (!/^\d{4}$/.test(p[0])) return null;
+    return { date: new Date(+p[0], p[1] ? +p[1] - 1 : 0, p[2] ? +p[2] : 1), prec: p.length };
+  }
+  function fmtP(pd) {
+    var d = pd.date;
+    return pd.prec === 1 ? String(d.getFullYear()) : pd.prec === 2 ? MON[d.getMonth()] + " " + d.getFullYear() : d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear();
+  }
+  function today() { var t = new Date(); t.setHours(0, 0, 0, 0); return t; }
+
+  // ---- profile files (same layout as scripts/site-profiles/profiles.py)
+  function parseProfile(text) {
+    text = text.replace(/\r\n/g, "\n");
+    if (text.indexOf("---\n") !== 0) return { meta: {}, body: text };
+    var end = text.indexOf("\n---", 3);
+    var fm = text.slice(4, end + 1), rest = text.slice(end + 4).replace(/^\n+/, "");
+    return { meta: plain(jsyaml.load(fm) || {}), body: rest };
+  }
+  function renderProfile(meta, body) {
+    var o = {};
+    ORDER.forEach(function (k) { if (k in meta) o[k] = meta[k]; });
+    Object.keys(meta).forEach(function (k) { if (!(k in o) && k !== "detected" && k !== "body") o[k] = meta[k]; });
+    if (meta.detected) o.detected = meta.detected;
+    var y = jsyaml.dump(o, { indent: 2, lineWidth: -1, noRefs: true, sortKeys: false });
+    return "---\n" + HEADER + y + "---\n" + (body && body.trim() ? "\n" + body.trim() + "\n" : "");
+  }
+  function fileFromResult(res) {
+    var sha = null, text = null;
+    (res.content || []).forEach(function (b) {
+      if (b.type === "text" && /SHA: ([0-9a-f]{40})/.test(b.text)) sha = /SHA: ([0-9a-f]{40})/.exec(b.text)[1];
+      if (b.type === "resource" && b.resource && typeof b.resource.text === "string") text = b.resource.text;
+      if (b.type === "text" && text === null && /^---\n/.test(b.text)) text = b.text;
+    });
+    return text === null ? null : { sha: sha, text: text };
+  }
+  function errText(e) {
+    var c = e && e.code;
+    if (c === "http") {
+      if (e.status === 401) return "GitHub did not accept your token: it may have expired. Sign in again.";
+      if (e.status === 403) return /rate limit/i.test(e.message || "") ? "GitHub's hourly limit for anonymous reads was reached. Sign in to raise it." : "Your GitHub account or token cannot write to " + CFG.owner + "/" + CFG.repo + ".";
+      if (e.status === 404) return "Not found on GitHub, or your token cannot see this repository.";
+      if (e.status === 409 || e.status === 422) return "Someone saved this profile at the same time. Refresh, then save again.";
+      return "GitHub answered " + e.status + ": " + (e.message || "").slice(0, 140);
+    }
+    if (c === "network") return "Could not reach GitHub. Check your connection.";
+    if (c === "server_not_connected") return "Add the GitHub connector in claude.ai Settings → Connectors to edit and save.";
+    if (c === "needs_reauth") return "Reconnect GitHub in claude.ai Settings → Connectors.";
+    if (c === "selection_required") return "Choose which GitHub connection this page should use, then reload.";
+    if (c === "not_in_manifest") return "GitHub is turned off for this page. Turn it on from the page's Permissions menu.";
+    if (c === "blocked_by_policy" || c === "approval_required") return "Your organization's policy blocks GitHub from this page.";
+    if (c === "tool_error") return "GitHub refused: " + ((e.message || "").slice(0, 160));
+    if (c === "server_unavailable" || c === "rate_limited") return "GitHub did not answer in time.";
+    return "GitHub error: " + ((e && e.message) || c || "unknown").slice(0, 160);
+  }
+
+  // ---- GitHub access. Two routes with the same interface:
+  //  connector: inside Claude, through the viewer's GitHub connector (the frame allows no other network calls)
+  //  rest:      anywhere else (GitHub Pages, a local file), straight to api.github.com with the viewer's token
+  function connectorGitHub(mcp) {
+    var call = function (tool, input) { return mcp.callTool(GH, tool, input, { cache: false }); };
+    var repo = { owner: CFG.owner, repo: CFG.repo };
+    return {
+      kind: "connector",
+      read: async function (path) { var f = fileFromResult(await call("get_file_contents", Object.assign({ path: path, ref: "refs/heads/" + CFG.branch }, repo))); if (!f) throw { code: "tool_error", message: "Empty file" }; return f; },
+      list: async function (dir) { var r = await call("get_file_contents", Object.assign({ path: dir, ref: "refs/heads/" + CFG.branch, fields: ["name", "path", "type"] }, repo)); return Array.isArray(r.payload) ? r.payload : []; },
+      write: async function (path, content, message, sha) { var input = Object.assign({ path: path, branch: CFG.branch, content: content, message: message }, repo); if (sha) input.sha = sha; await call("create_or_update_file", input); return null; },
+      commits: async function (path, n) { var r = await call("list_commits", Object.assign({ sha: CFG.branch, path: path, perPage: n, fields: ["sha", "html_url", "commit", "author"] }, repo)); return Array.isArray(r.payload) ? r.payload : []; },
+      me: async function () { var r = await call("get_me", {}); return (r.payload && r.payload.login) || ""; },
+      canPush: async function () { return true; }
+    };
+  }
+  function b64decode(b64) { var bin = atob(b64.replace(/\s/g, "")), bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+  function b64encode(text) { var bytes = new TextEncoder().encode(text), bin = ""; for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+  function restGitHub(getToken) {
+    var api = "https://api.github.com/repos/" + CFG.owner + "/" + CFG.repo;
+    var enc = function (path) { return path.split("/").map(encodeURIComponent).join("/"); };
+    async function req(method, url, body) {
+      var h = { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, t = getToken();
+      if (t) h.Authorization = "Bearer " + t;
+      if (body) h["Content-Type"] = "application/json";
+      var r;
+      try { r = await fetch(url, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: "no-store" }); }
+      catch (e) { throw { code: "network", message: String(e) }; }
+      var data = null; try { data = await r.json(); } catch (e) {}
+      if (!r.ok) throw { code: "http", status: r.status, message: (data && data.message) || r.statusText };
+      return data;
+    }
+    return {
+      kind: "rest",
+      read: async function (path) { var d = await req("GET", api + "/contents/" + enc(path) + "?ref=" + encodeURIComponent(CFG.branch)); return { sha: d.sha, text: b64decode(d.content || "") }; },
+      list: async function (dir) { var d = await req("GET", api + "/contents/" + enc(dir) + "?ref=" + encodeURIComponent(CFG.branch)); return Array.isArray(d) ? d : []; },
+      write: async function (path, content, message, sha) { var body = { message: message, content: b64encode(content), branch: CFG.branch }; if (sha) body.sha = sha; var d = await req("PUT", api + "/contents/" + enc(path), body); return (d && d.commit && d.commit.sha) || null; },
+      commits: async function (path, n) { var d = await req("GET", api + "/commits?sha=" + encodeURIComponent(CFG.branch) + "&path=" + encodeURIComponent(path) + "&per_page=" + n); return Array.isArray(d) ? d : []; },
+      me: async function () { var d = await req("GET", "https://api.github.com/user"); return (d && d.login) || ""; },
+      canPush: async function () { var d = await req("GET", api); return !!(d && d.permissions && d.permissions.push); }
+    };
+  }
+  var TOKEN_KEY = "lime-site-matrix-github-token";
+  function readToken() { try { return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } }
+
+  var libForms = [], libByCode = {};
+  function setLibrary(lib) {
+    libForms = lib.forms.map(function (f) { return Object.assign({ in_library: true }, f); });
+    libByCode = {}; libForms.forEach(function (f) { libByCode[f.code] = f; });
+  }
+  setLibrary(D.library);
+
+  Alpine.data("matrix", function () {
+    return {
+      cfg: CFG, lib: D.library, base: {}, files: {}, pending: {}, saveStatus: {}, view: [],
+      gh: null, ghKind: "", token: "", signInOpen: false, tokenInput: "", rememberToken: false, signInError: "", signingIn: false,
+      perms: null, noticeAction: "", source: "snapshot", canEdit: false, ghLogin: "", notice: "", noticeTone: "",
+      statusFilter: "all", q: "", onlyUsed: true,
+      open: { time: false, reg: false, mods: false, int: false, forms: false }, openProg: {},
+      pop: { kind: "", site: "", path: "", title: "", x: 0, y: 0 }, popOpen: false, drawer: null, reviewOpen: false, addOpen: false, saving: false, commitNote: "", toast: "",
+      newSite: { name: "", country: "" }, copySrc: "", copyForms: true, copyMods: true,
+      history: { state: "idle", items: [], error: "" },
+      formRows: [], programs: [],
+      milestoneRows: [["requirements", "Requirements complete", "Activities, forms and metadata signed off"], ["uat", "UAT ready", "Test server available to users"], ["prod", "Production target", "Planned go-live"], ["live", "Live since", "Actual go-live"], ["handover", "Handover / closure", "Handover or decommission"]],
+      // [key, label, hint, editor kind, profile path]
+      regRows: [["id_prefix", "MSF ID prefix", "idgen generator", "text", "registration.id_prefix"], ["other_ids", "Other identifiers", "Shown at registration", "list", "registration.other_ids"], ["extra_fields", "Extra fields", "Beyond name, sex, birth date", "list", "registration.extra_fields"], ["address", "Address hierarchy", "", "list", "registration.address"], ["languages", "Languages", "UI locales", "list", "registration.languages"], ["locations", "Locations", "Login and visit locations", "list", "locations"]],
+      intRows: [["target", "DHIS2 target", "Tracker program"], ["version", "OpenFn config", "Project version"], ["workflows", "Workflows", "Schedule (UTC) and state"], ["forms", "Forms synced", "Production / staging"], ["config", "Config file", ""]],
+      needOptions: [["needed", "Needed", "todo", "Needed"], ["not_needed", "Not needed", "no", "–"], ["on_hold", "On hold", "hold", "Hold"], [null, "No decision (use repo state)", "unk", "·"]],
+
+      init: function () {
+        var self = this;
+        D.sites.forEach(function (s) { var b = clone(s); delete b.body; self.base[s.id] = b; self.files[s.id] = { body: s.body || "" }; });
+        try {
+          var st = JSON.parse(localStorage.getItem("lime-site-matrix-ui") || "null");
+          if (st) { Object.assign(self.open, st.open || {}); self.onlyUsed = st.onlyUsed !== false; self.statusFilter = st.statusFilter || "all"; }
+          var dr = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+          if (dr && typeof dr === "object") self.pending = dr;
+        } catch (e) {}
+        this.recompute();
+        ["open", "onlyUsed", "statusFilter"].forEach(function (k) { self.$watch(k, function () { self.saveUi(); }); });
+        this.connect();
+      },
+      saveUi: function () { try { localStorage.setItem("lime-site-matrix-ui", JSON.stringify({ open: this.open, onlyUsed: this.onlyUsed, statusFilter: this.statusFilter })); } catch (e) {} },
+      saveDraft: function () { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(this.pending)); } catch (e) {} },
+
+      // ------------------------------------------------ GitHub
+      connect: async function () {
+        var self = this;
+        if (window.claude && window.claude.use) {
+          var mcp = await window.claude.use("mcp");
+          if (!mcp) { this.setNotice("Read-only view: GitHub is not available here.", ""); return; }
+          this.gh = connectorGitHub(mcp); this.ghKind = "connector";
+          this.perms = await window.claude.use("permissions");
+          var st = await this.ghPermission();
+          if (st === "prompt") { this.setNotice("This page reads and saves site profiles through your GitHub connector. Allow it to load the latest profiles and edit.", "warn", "allow"); return; }
+          if (st === "denied") { this.setNotice("GitHub is turned off for this page, so you see the snapshot and cannot edit.", "warn", "manage"); return; }
+          if (st === "unavailable") { this.setNotice("No GitHub connector is available. Add GitHub in claude.ai Settings, Connectors, then reload this page.", "warn", ""); return; }
+        } else {
+          this.token = readToken();
+          this.gh = restGitHub(function () { return self.token; }); this.ghKind = "rest";
+        }
+        await this.loadFromGitHub(false);
+      },
+      // action: "" | "retry" | "allow" | "manage"
+      setNotice: function (t, tone, action) { this.notice = t; this.noticeTone = tone || ""; this.noticeAction = action === true ? "retry" : (action || ""); },
+      ghPermission: async function () {
+        if (!this.perms) return "granted";
+        try { return await this.perms.state("mcp:" + GH); } catch (e) { return "granted"; }
+      },
+      allowGitHub: async function () {
+        var st = "prompt";
+        if (this.perms) { try { var r = await this.perms.request(["mcp:" + GH]); st = r["mcp:" + GH] || "granted"; } catch (e) { st = "granted"; } }
+        if (st === "denied") { this.setNotice("GitHub was not allowed for this page. You can turn it on from the page's permissions.", "warn", "manage"); return; }
+        if (st === "unavailable") { this.setNotice("No GitHub connector is available. Add GitHub in claude.ai Settings, Connectors, then reload this page.", "warn", ""); return; }
+        await this.loadFromGitHub(true);
+      },
+      managePermissions: async function () {
+        if (!this.perms) return;
+        try { await this.perms.manage(); }
+        catch (e) { this.setNotice("Open the page's Permissions menu (top right of the page) and turn GitHub on, then reload.", "warn", ""); return; }
+        var st = await this.ghPermission();
+        if (st === "granted" || st === "prompt") await this.allowGitHub();
+      },
+      readFile: function (path) { return this.gh.read(path); },
+      profilePath: function (id) { return CFG.dir + "/" + id + ".md"; },
+      loadFromGitHub: async function (userAction) {
+        var self = this;
+        if (!this.gh) return;
+        this.source = "loading";
+        try {
+          var entries = await this.gh.list(CFG.dir);
+          var ids = entries.filter(function (e) { return e.type === "file" && /\.md$/.test(e.name); }).map(function (e) { return e.name.replace(/\.md$/, ""); });
+          var libFile = null;
+          try { libFile = await this.readFile(CFG.library); } catch (e) {}
+          if (libFile && libFile.text) { try { var lib = jsyaml.load(libFile.text); if (lib && lib.forms && lib.modules) { this.lib = lib; setLibrary(lib); } } catch (e) {} }
+          var results = await Promise.all(ids.map(function (id) { return self.readFile(self.profilePath(id)).then(function (f) { return [id, f]; }, function () { return [id, null]; }); }));
+          var base = {}, files = {}, failed = 0;
+          results.forEach(function (r) {
+            if (!r[1]) { failed++; if (self.base[r[0]]) { base[r[0]] = self.base[r[0]]; files[r[0]] = self.files[r[0]]; } return; }
+            var p = parseProfile(r[1].text);
+            if (!p.meta.id) p.meta.id = r[0];
+            base[r[0]] = p.meta; files[r[0]] = { sha: r[1].sha, body: p.body, text: r[1].text };
+          });
+          this.base = base; this.files = files;
+          this.source = "github";
+          this.canEdit = this.ghKind === "connector" || !!this.token;
+          this.setNotice(failed ? failed + " profile(s) could not be read from GitHub; showing the snapshot for those." : "", failed ? "warn" : "");
+          this.recompute();
+          if (!this.ghLogin && this.canEdit) this.gh.me().then(function (l) { self.ghLogin = l; }, function () {});
+          if (userAction) this.say("Loaded the latest profiles from GitHub");
+        } catch (e) {
+          this.source = "snapshot"; this.canEdit = false;
+          var action = "";
+          if (this.ghKind === "connector") {
+            var st = await this.ghPermission();
+            action = st === "denied" || (e && e.code === "not_in_manifest") ? "manage" : (st === "prompt" || (e && (e.retryable || e.code === "upstream_error" || e.code === "consent_required"))) ? "allow" : (e && e.code === "server_unavailable") ? "retry" : "";
+          } else if (e && (e.code === "network" || (e.code === "http" && e.status >= 500))) action = "retry";
+          var msg = action === "allow" ? "GitHub access for this page is not confirmed yet." : errText(e);
+          this.setNotice(msg + " Showing the snapshot from " + (D.source_commit || "the last build") + "; editing is off.", "warn", action);
+        }
+      },
+      openSignIn: function () { this.signInError = ""; this.tokenInput = ""; this.signInOpen = true; var self = this; this.$nextTick(function () { var el = document.getElementById("gh-token"); if (el) el.focus(); }); },
+      signIn: async function () {
+        var t = this.tokenInput.trim(); if (!t) return;
+        var self = this, prev = this.token;
+        this.signingIn = true; this.signInError = ""; this.token = t;
+        try {
+          var login = await this.gh.me();
+          var push = false; try { push = await this.gh.canPush(); } catch (e) {}
+          if (!push) { this.token = prev; this.signInError = "Signed in as @" + login + ", but this account or token cannot write to " + CFG.owner + "/" + CFG.repo + ". Give the token Contents: Read and write on that repository."; return; }
+          try { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); (this.rememberToken ? localStorage : sessionStorage).setItem(TOKEN_KEY, t); } catch (e) {}
+          this.ghLogin = login; this.signInOpen = false; this.tokenInput = "";
+          if (this.source !== "github") await this.loadFromGitHub(false); else this.canEdit = true;
+          this.say("Signed in to GitHub as @" + esc(login) + ". Your saves will be commits by this account.");
+        } catch (e) { this.token = prev; this.signInError = errText(e); }
+        finally { this.signingIn = false; }
+      },
+      signOut: function () {
+        try { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+        this.token = ""; this.ghLogin = ""; this.canEdit = false;
+        this.say("Signed out. Unsaved changes are kept in this browser.");
+      },
+      sourceLabel: function () { return this.source === "github" ? "Live from GitHub" : this.source === "loading" ? "Loading from GitHub…" : "Snapshot " + (D.source_commit || ""); },
+      sourceTitle: function () { return this.source === "github" ? "Profiles read from " + this.repoLabel() : "Embedded copy built " + D.built_at; },
+      repoLabel: function () { return CFG.owner + "/" + CFG.repo + " @ " + CFG.branch; },
+
+      saveAll: async function () {
+        if (!this.canEdit || this.saving) return;
+        this.saving = true;
+        var self = this, sites = Object.keys(this.pending), ok = [], failed = [];
+        for (var i = 0; i < sites.length; i++) {
+          var id = sites[i];
+          self.saveStatus[id] = "Saving…";
+          try {
+            var r = await self.saveSite(id);
+            ok.push(r ? self.siteById(id).name + ' <span class="font-mono">' + r.slice(0, 7) + "</span>" : self.siteById(id).name);
+            self.saveStatus[id] = "";
+          } catch (e) {
+            failed.push(self.siteById(id).name);
+            self.saveStatus[id] = errText(e);
+          }
+        }
+        this.saving = false;
+        this.saveDraft();
+        this.recompute();
+        if (!failed.length) this.commitNote = "";
+        if (ok.length) this.say("Committed: " + ok.join(", "));
+        if (failed.length) { this.reviewOpen = true; this.say("Not saved: " + esc(failed.join(", ")) + ". See the details."); }
+      },
+      saveSite: async function (id) {
+        var changes = this.pending[id] || {}, isNew = !this.base[id] || !!changes.__new;
+        var path = this.profilePath(id), remote = null;
+        if (!isNew) remote = await this.readFile(path);
+        var meta, body;
+        if (remote) { var p = parseProfile(remote.text); meta = p.meta; body = p.body; }
+        else { meta = { id: id }; body = ""; }
+        this.applyChanges(meta, changes);
+        var text = renderProfile(meta, body);
+        if (remote && text === remote.text) { this.afterSave(id, meta, body, remote); return null; }
+        var commitSha = null;
+        try {
+          commitSha = await this.gh.write(path, text, this.commitMessage(id, changes), remote && remote.sha);
+        } catch (e) {
+          // An unanswered write may still have landed: compare with what GitHub has now.
+          var now = null; try { now = await this.readFile(path); } catch (e2) {}
+          if (!(now && now.text === text)) throw e;
+        }
+        var fresh = null; try { fresh = await this.readFile(path); } catch (e) {}
+        this.afterSave(id, meta, body, fresh || { text: text, sha: null });
+        if (commitSha) return commitSha;
+        try { var log = await this.gh.commits(path, 1); return (log[0] && log[0].sha) || null; } catch (e) { return null; }
+      },
+      afterSave: function (id, meta, body, file) {
+        this.base[id] = meta; this.files[id] = { sha: file.sha, body: body, text: file.text };
+        var p = Object.assign({}, this.pending); delete p[id]; this.pending = p;
+      },
+      applyChanges: function (meta, changes) {
+        Object.keys(changes).forEach(function (k) {
+          if (k === "__new") { Object.keys(changes.__new).forEach(function (f) { if (meta[f] == null) meta[f] = changes.__new[f]; }); return; }
+          if (k.indexOf("detected") === 0) return;
+          setPath(meta, k, clone(changes[k]));
+        });
+        if (meta.milestones) Object.keys(meta.milestones).forEach(function (m) { if (!Object.keys(meta.milestones[m] || {}).length) delete meta.milestones[m]; });
+      },
+      commitMessage: function (id, changes) {
+        var self = this, base = this.base[id] || {};
+        var items = Object.keys(changes).filter(function (k) { return k !== "__new"; }).map(function (k) { return { label: self.pathLabel(k), from: self.show(getPath(base, k)), to: self.show(changes[k]) }; });
+        var title = changes.__new && !this.base[id] ? "Add site " + (changes.__new.name || id) : items.slice(0, 2).map(function (c) { return c.label + ": " + c.to; }).join("; ") + (items.length > 2 ? " and " + (items.length - 2) + " more" : "");
+        var lines = ["site-matrix(" + id + "): " + title, ""];
+        items.forEach(function (c) { lines.push("- " + c.label + ": " + c.from + " -> " + c.to); });
+        if (this.commitNote.trim()) lines.push("", this.commitNote.trim());
+        lines.push("", "Edited in the LIME Site Matrix page.");
+        return lines.join("\n");
+      },
+      loadHistory: async function (id) {
+        if (!this.gh) { this.history = { state: "none", items: [], error: "" }; return; }
+        this.history = { state: "loading", items: [], error: "" };
+        try {
+          var items = (await this.gh.commits(this.profilePath(id), 20)).map(function (c) {
+            var ca = (c.commit && c.commit.author) || {};
+            var d = ca.date ? new Date(ca.date) : null;
+            return { sha: c.sha, url: c.html_url, title: ((c.commit && c.commit.message) || "").split("\n")[0], who: c.author && c.author.login ? "@" + c.author.login : (ca.name || "Unknown"), when: d ? d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") : "" };
+          });
+          this.history = { state: items.length ? "done" : "error", items: items, error: items.length ? "" : "No commits yet for this profile." };
+        } catch (e) { this.history = { state: "error", items: [], error: errText(e) }; }
+      },
+
+      // ------------------------------------------------ effective sites
+      recompute: function () {
+        var self = this;
+        var ids = Object.keys(this.base);
+        Object.keys(this.pending).forEach(function (id) { if (!self.base[id] && self.pending[id].__new) ids.push(id); });
+        var sites = ids.map(function (id) {
+          var s = clone(self.base[id]) || { id: id };
+          self.applyChanges(s, self.pending[id] || {});
+          if (!s.status) s.status = "planned";
+          return s;
+        });
+        var order = { live: 0, preparation: 1, planned: 2, closed: 3 };
+        // Order by the saved status so columns do not jump while editing.
+        var rank = function (s) { var b = self.base[s.id]; return order[(b && b.status) || s.status] || 0; };
+        sites.sort(function (a, b) { return (rank(a) - rank(b)) || String(a.name).localeCompare(String(b.name)); });
+        var rows = libForms.slice();
+        sites.forEach(function (s) { (s.custom_forms || []).forEach(function (cf) { rows.push({ code: cf.code, name: cf.name, program: cf.program || "Other", custom: true, owner: s.name, ownerId: s.id, in_library: false }); }); });
+        var byProg = {};
+        rows.forEach(function (r) { (byProg[r.program] = byProg[r.program] || []).push(r); });
+        this.formRows = rows;
+        this.programs = Object.keys(byProg).sort(function (a, b) { return a === "Other" ? 1 : b === "Other" ? -1 : a === "Unassigned" ? 1 : b === "Unassigned" ? -1 : a.localeCompare(b); })
+          .map(function (p) { return { name: p, forms: byProg[p], shownForms: [] }; });
+        sites.forEach(function (s) { self.derive(s, rows); });
+        // Update existing site objects in place so every binding inside the keyed loops re-runs.
+        var old = {}; (this.view || []).forEach(function (o) { old[o.id] = o; });
+        this.view = sites.map(function (n) {
+          var o = old[n.id]; if (!o) return n;
+          Object.keys(o).forEach(function (k) { if (!(k in n)) delete o[k]; });
+          Object.keys(n).forEach(function (k) { o[k] = n[k]; });
+          return o;
+        });
+      },
+      derive: function (s, rows) {
+        var det = s.detected || {}, needs = s.needs || {}, live = !!s.detected;
+        var built = {}; expand(det.forms).forEach(function (c) { built[c] = 1; });
+        var integ = det.integration || null, sync = {};
+        if (integ) { expand(integ.staging_forms).forEach(function (c) { sync[c] = "staging"; }); expand(integ.synced_forms).forEach(function (c) { sync[c] = "live"; }); }
+        var fNeeds = needs.forms || {}, fDefault = needs.forms_default || null, notes = s.form_notes || {};
+        var customs = {}; (s.custom_forms || []).forEach(function (cf) { customs[cf.code] = cf; });
+        var fc = {}, st = { on: 0, todo: 0, hold: 0, remove: 0 }, lib = 0, neu = 0;
+        rows.forEach(function (r) {
+          var need, isBuilt = !!built[r.code];
+          if (r.custom) { if (r.ownerId !== s.id) { fc[r.code] = { st: "unk", title: "Site-specific form of " + r.owner }; return; } need = customs[r.code].need || "needed"; }
+          else need = fNeeds[r.code] || (isBuilt ? null : fDefault);
+          var x = cellState(need, isBuilt, live), note = notes[r.code] || (r.custom ? customs[r.code].note : null);
+          fc[r.code] = { st: x.st, title: x.title + (note ? ". " + note : ""), sync: sync[r.code] || null, note: note };
+          if (st[x.st] !== undefined) st[x.st]++;
+          if (x.st === "on" || x.st === "todo") { if (r.in_library) lib++; else neu++; }
+        });
+        if (s.registration && s.registration.custom_form) neu++;
+        var mBuilt = {}; (det.modules || []).forEach(function (m) { mBuilt[m] = 1; });
+        var mNeeds = needs.modules || {}, mc = {}, ms = { on: 0, todo: 0, hold: 0, remove: 0 };
+        this.lib.modules.forEach(function (m) { var x = cellState(mNeeds[m.id], !!mBuilt[m.id], live); mc[m.id] = x; if (ms[x.st] !== undefined) ms[x.st]++; });
+        var need = (s.integration || {}).need, ic;
+        if (integ && integ.status === "live") ic = { st: need === "not_needed" ? "remove" : "on", label: need === "not_needed" ? "Remove?" : "Live", title: "Production OpenFn workflow enabled", sub: expand(integ.synced_forms).length + " forms synced" };
+        else if (integ) ic = { st: need === "needed" ? "todo" : "template", label: need === "needed" ? "Needed" : "Template", title: "OpenFn project present but not adapted or triggers off" + (integ.identical_to ? " (identical to " + integ.identical_to.join(", ") + ")" : ""), sub: integ.identical_to ? "Copy, same as " + integ.identical_to.join(", ") : "Triggers off" };
+        else if (need) { var k = need === "needed" ? "todo" : need === "on_hold" ? "hold" : "no"; ic = { st: k, label: LABEL[k], title: NEED_TEXT[need], sub: need === "needed" ? "To set up" : "" }; }
+        else ic = { st: "unk", label: "·", title: "No decision", sub: "" };
+        s.fCell = fc; s.modCell = mc; s.intCell = ic;
+        s.stats = { forms: st, modules: ms, reuse: (lib + neu) ? Math.round(100 * lib / (lib + neu)) : null };
+      },
+      get ds() { return this.drawer ? this.siteById(this.drawer.site) : null; },
+      shown: function () { var f = this.statusFilter; return this.view.filter(function (s) { return f === "all" || s.status === f; }); },
+      siteById: function (id) { return this.view.find(function (s) { return s.id === id; }) || { id: id, name: id, stats: { forms: {}, modules: {} } }; },
+
+      // ------------------------------------------------ cells
+      label: function (st) { return LABEL[st] || "·"; },
+      statusTone: function (st) { return { live: "bg-on-bg text-on", preparation: "bg-hold-bg text-hold", planned: "bg-todo-bg text-todo" }[st] || "bg-surface-2 text-muted"; },
+      formCell: function (s, f) { return s.fCell[f.code] || { st: "unk", title: "" }; },
+      formPath: function (f, s) { return f.custom ? (f.ownerId === s.id ? "custom_forms" : null) : "needs.forms." + f.code; },
+      progCell: function (s, p) {
+        var on = 0, todo = 0, hold = 0, tot = p.forms.length;
+        p.forms.forEach(function (f) { var c = s.fCell[f.code]; if (!c) return; if (c.st === "on") on++; else if (c.st === "todo") todo++; else if (c.st === "hold") hold++; });
+        if (on + todo) return { st: on ? "on" : "todo", label: (on + todo) + "/" + tot, title: on + " on, " + todo + " needed, of " + tot + ". Click to set all." };
+        if (hold) return { st: "hold", label: "Hold", title: hold + " on hold" };
+        var anyNo = p.forms.some(function (f) { var c = s.fCell[f.code]; return c && c.st === "no"; });
+        return { st: anyNo ? "no" : "unk", label: anyNo ? "–" : "·", title: (anyNo ? "Not needed" : "No decision") + ". Click to set all." };
+      },
+      visiblePrograms: function () {
+        var self = this, q = this.q.trim().toLowerCase(), sites = this.shown();
+        return this.programs.map(function (p) {
+          p.shownForms = p.forms.filter(function (f) {
+            if (q && (f.code + " " + f.name + " " + p.name).toLowerCase().indexOf(q) < 0) return false;
+            if (self.onlyUsed && !q && !sites.some(function (s) { var c = s.fCell[f.code]; return c && (c.st === "on" || c.st === "todo" || c.st === "hold" || c.st === "remove"); })) return false;
+            return true;
+          });
+          return p;
+        }).filter(function (p) { return p.shownForms.length || (!self.onlyUsed && !q); });
+      },
+      formTable: function () {
+        var out = [], self = this;
+        if (!this.open.forms && !this.q.trim()) return out;
+        this.visiblePrograms().forEach(function (p) {
+          out.push({ k: "p:" + p.name, type: "prog", p: p });
+          if (self.progOpen(p)) p.shownForms.forEach(function (f) { out.push({ k: "f:" + f.code, type: "form", f: f, p: p }); });
+        });
+        return out;
+      },
+      progOpen: function (p) { return !!this.openProg[p.name] || !!this.q.trim(); },
+      countSummary: function (c) {
+        if (!c.on && !c.todo && !c.hold && !c.remove) return '<span class="text-muted">·</span>';
+        var parts = [];
+        if (c.on) parts.push("<b>" + c.on + "</b> on");
+        if (c.todo) parts.push('<b class="text-todo">' + c.todo + "</b> needed");
+        if (c.hold) parts.push('<b class="text-hold">' + c.hold + "</b> hold");
+        if (c.remove) parts.push('<b class="text-hold">' + c.remove + "</b> to remove");
+        return parts.join(' <span class="text-muted">·</span> ');
+      },
+      timelineSummary: function (s) {
+        var t = today(), best = null, ms = s.milestones || {};
+        this.milestoneRows.forEach(function (r) {
+          var m = ms[r[0]]; if (!m || m.done) return;
+          var pd = parseD(m.date); if (!pd) return;
+          if (!best || pd.date < best.pd.date) best = { pd: pd, label: r[1] };
+        });
+        if (best) {
+          var days = Math.round((best.pd.date - t) / 864e5);
+          var rel = best.pd.prec < 3 ? "target" : days < 0 ? '<span class="font-semibold text-crit">overdue ' + (-days) + " d</span>" : days <= 14 ? '<span class="font-semibold text-hold">in ' + days + " d</span>" : "in " + days + " d";
+          return '<span class="block font-semibold">' + esc(best.label) + '</span><span class="block text-[12px] text-muted">' + fmtP(best.pd) + " · " + rel + "</span>";
+        }
+        var live = ms.live && parseD(ms.live.date);
+        if (live) return '<span class="block font-semibold">Live</span><span class="block text-[12px] text-muted">since ' + fmtP(live) + "</span>";
+        return '<span class="block">' + esc(s.phase || "") + '</span><span class="block text-[12px] text-muted">No dates set</span>';
+      },
+      milestoneCell: function (s, k) {
+        var m = (s.milestones || {})[k];
+        if (!m) return '<span class="text-no opacity-60">·</span>';
+        var pd = parseD(m.date), note = m.note ? ' title="' + esc(m.note) + '"' : "";
+        if (!pd) return '<span class="text-[12px] italic text-no"' + note + ">" + (m.done ? "Done, date TBC" : "Date TBC") + "</span>";
+        var rel = "";
+        if (m.done) rel = '<span class="block text-[11.5px] text-on">Done</span>';
+        else if (pd.prec === 3) { var d = Math.round((pd.date - today()) / 864e5); rel = '<span class="block text-[11.5px] ' + (d < 0 ? "font-semibold text-crit" : d <= 14 ? "font-semibold text-hold" : "text-muted") + '">' + (d < 0 ? "Overdue " + (-d) + " d" : d === 0 ? "Today" : "In " + d + " d") + "</span>"; }
+        else rel = '<span class="block text-[11.5px] text-muted">Target</span>';
+        return "<span" + note + '><span class="block font-semibold">' + (m.approx ? "≈ " : "") + fmtP(pd) + (m.note ? ' <span class="text-[11px] font-normal text-muted">ⓘ</span>' : "") + "</span>" + rel + "</span>";
+      },
+      regVal: function (s, k) {
+        var plan = k === "locations" ? s.locations : (s.registration || {})[k];
+        var det = k === "locations" ? (s.detected || {}).locations : ((s.detected || {}).registration || {})[k];
+        var has = plan != null && plan !== "" && !(Array.isArray(plan) && !plan.length);
+        return { plan: plan, det: det, val: has ? plan : det };
+      },
+      regSummary: function (s) {
+        var p = this.regVal(s, "id_prefix").val, l = this.regVal(s, "languages").val;
+        if (p == null && l == null && !(s.registration && s.registration.custom_form)) return '<span class="text-no opacity-60">·</span>';
+        return (p ? '<span class="font-mono text-[12.5px] font-semibold">' + esc(p) + "</span>" : '<span class="text-[12px] italic text-no">Prefix TBD</span>') +
+          (s.registration && s.registration.custom_form ? ' <span class="rounded bg-new-bg px-1 text-[10px] font-bold uppercase text-new">New</span>' : "") +
+          '<span class="block text-[12px] text-muted">' + esc(Array.isArray(l) ? l.join(", ") : (l || "Languages TBD")) + "</span>";
+      },
+      regCell: function (s, k) {
+        var v = this.regVal(s, k);
+        if (v.val == null || (Array.isArray(v.val) && !v.val.length)) return s.detected || s.registration ? '<span class="text-[12px] italic text-no">To define</span>' : '<span class="text-no opacity-60">·</span>';
+        var txt = Array.isArray(v.val) ? v.val.join(k === "address" ? " › " : ", ") : String(v.val);
+        var ex = ((s.detected || {}).registration || {}).id_example;
+        txt = k === "id_prefix" ? '<span class="font-mono font-semibold">' + esc(txt) + "</span>" + (ex && v.val === (s.detected.registration || {}).id_prefix ? '<span class="block text-[11.5px] text-muted">e.g. ' + esc(ex) + "</span>" : "") : esc(txt);
+        var differs = v.plan != null && v.det != null && !same(v.plan, v.det) && !(Array.isArray(v.plan) && !v.plan.length);
+        return txt + (differs ? '<span class="block text-[11px] text-hold" title="The site build has a different value: the repo config still needs this change">Repo: ' + esc(Array.isArray(v.det) ? v.det.join(", ") : v.det) + "</span>" : "");
+      },
+      intCell: function (s, k) {
+        var i = (s.detected || {}).integration, plan = s.integration || {};
+        if (k === "target") return plan.dhis2_target ? esc(plan.dhis2_target) : (i || plan.need ? '<span class="text-[12px] italic text-no">To define</span>' : '<span class="text-no opacity-60">·</span>');
+        if (!i) return '<span class="text-no opacity-60">·</span>';
+        if (k === "version") return '<span class="font-mono font-semibold">' + esc(i.version || "?") + "</span>" + (i.version_date ? '<span class="block text-[11.5px] text-muted">' + fmtP(parseD(i.version_date)) + "</span>" : "");
+        if (k === "workflows") return (i.workflows || []).map(function (w) { return '<span class="block"><span class="font-semibold ' + (w.enabled ? "text-on" : "text-no") + '">' + (w.enabled ? "On" : "Off") + "</span> " + esc((w.name || "").replace(/^wf(\d)-/, "WF$1 ")) + ' <span class="text-muted">' + esc(w.cron || "") + "</span></span>"; }).join("");
+        if (k === "forms") return "<b>" + expand(i.synced_forms).length + '</b> live <span class="text-muted">·</span> <b>' + expand(i.staging_forms).length + "</b> staging" + (i.mapped_forms && !(i.synced_forms || []).length ? '<span class="block text-[11.5px] text-muted">Mapped but off: ' + esc(i.mapped_forms.join(", ")) + "</span>" : "");
+        if (k === "config") return '<span class="break-all font-mono text-[11px] text-muted">' + esc(i.config) + "</span>";
+        return "";
+      },
+
+      kpis: function () {
+        var v = this.view, by = { live: 0, preparation: 0, planned: 0 };
+        v.forEach(function (s) { by[s.status] = (by[s.status] || 0) + 1; });
+        var shared = libForms.filter(function (f) { return v.filter(function (s) { var c = s.fCell[f.code]; return c && (c.st === "on" || c.st === "todo"); }).length >= 2; }).length;
+        var prep = v.filter(function (s) { return s.status !== "live" && s.stats.reuse !== null; });
+        var reuse = prep.length ? Math.round(prep.reduce(function (a, s) { return a + s.stats.reuse; }, 0) / prep.length) : null;
+        var todo = v.reduce(function (a, s) { return a + s.stats.forms.todo + s.stats.modules.todo; }, 0);
+        var syncing = v.filter(function (s) { return s.intCell.st === "on"; }).length;
+        var next = null, t = today(), rows = this.milestoneRows;
+        v.forEach(function (s) { rows.forEach(function (r) { var m = (s.milestones || {})[r[0]]; if (!m || m.done) return; var pd = parseD(m.date); if (!pd || pd.prec < 3) return; if (!next || pd.date < next.pd.date) next = { pd: pd, site: s.name, label: r[1] }; }); });
+        var nd = next ? Math.round((next.pd.date - t) / 864e5) : 0;
+        return [
+          { k: "Sites", v: String(v.length), d: (by.live || 0) + " live · " + (by.preparation || 0) + " in preparation · " + (by.planned || 0) + " planned" },
+          { k: "Shared forms", v: shared + ' <small class="text-sm font-medium text-muted">/ ' + libForms.length + "</small>", d: "On or needed at 2+ sites" },
+          { k: "Reuse in new sites", v: reuse === null ? "–" : reuse + '<small class="text-sm font-medium text-muted">%</small>', d: "From the shared library, sites not yet live" },
+          { k: "Still to build", v: String(todo), d: "Forms and modules needed but not built" },
+          { k: "DHIS2 sync", v: syncing + ' <small class="text-sm font-medium text-muted">live</small>', d: v.filter(function (s) { return s.intCell.st === "template"; }).length + " template only · " + v.filter(function (s) { return s.intCell.st === "todo"; }).length + " to set up" },
+          { k: "Next milestone", v: next ? fmtP(next.pd) : "–", d: next ? next.site + ": " + next.label + (nd >= 0 ? " (in " + nd + " d)" : " (overdue " + (-nd) + " d)") : "None scheduled" }
+        ];
+      },
+
+      // ------------------------------------------------ editing
+      toggle: function (k) { this.open[k] = !this.open[k]; },
+      expandAll: function (on) {
+        var self = this;
+        Object.keys(this.open).forEach(function (k) { self.open[k] = on; });
+        var op = {}; if (on) this.programs.forEach(function (p) { op[p.name] = true; });
+        this.openProg = op;
+      },
+      openSite: function (id) { this.copySrc = ""; this.drawer = { site: id, tab: "overview" }; this.history = { state: "idle", items: [], error: "" }; },
+      setTab: function (t) { this.drawer.tab = t; if (t === "history") this.loadHistory(this.drawer.site); },
+      edit: function (ev, site, kind, path, title, prog, form) {
+        if (!this.canEdit) {
+          if (this.source === "loading") { this.say("Loading from GitHub, one moment."); return; }
+          if (this.ghKind === "rest" && this.source === "github") { this.openSignIn(); return; }
+          if (this.noticeAction === "allow") { this.allowGitHub(); return; }
+          this.say(this.notice || "Editing needs GitHub access."); return;
+        }
+        var r = ev.currentTarget.getBoundingClientRect(), w = 288, h = kind === "need" || kind === "status" ? 230 : 250;
+        var x = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)), y = r.bottom + 6;
+        if (y + h > window.innerHeight) y = Math.max(8, r.top - h - 6);
+        var s = this.siteById(site), pop = { site: site, kind: kind, path: path, title: title, prog: prog || null, form: form || null, x: x, y: y };
+        if (kind === "text" || kind === "list") {
+          var reg = this.regRows.find(function (q) { return q[4] === path; });
+          var cur = getPath(s, path), det = reg ? this.regVal(s, reg[0]).det : null;
+          pop.value = Array.isArray(cur) ? cur.join(path.endsWith("address") ? " › " : ", ") : (cur || "");
+          pop.repo = det && !same(det, cur) ? (Array.isArray(det) ? det.join(path.endsWith("address") ? " › " : ", ") : String(det)) : "";
+          pop.placeholder = pop.repo || "Not set";
+        }
+        if (kind === "milestone") { var m = getPath(s, path) || {}; pop.value = m.date || ""; pop.done = !!m.done; pop.note = m.note || ""; pop.error = ""; }
+        this.pop = pop; this.popOpen = true;
+        var self = this;
+        this.$nextTick(function () { if (self.$refs.popText) self.$refs.popText.focus(); });
+        ev.stopPropagation();
+      },
+      chooseNeed: function (need) {
+        var p = this.pop; this.popOpen = false;
+        var self = this, changes = {};
+        if (p.prog) p.prog.forms.forEach(function (f) { if (!f.custom) changes["needs.forms." + f.code] = need; });
+        else if (p.path === "custom_forms") {
+          var list = clone(this.siteById(p.site).custom_forms || []);
+          list.forEach(function (c) { if (p.form && c.code === p.form.code) c.need = need || "needed"; });
+          changes.custom_forms = list;
+        } else changes[p.path] = need;
+        Object.keys(changes).forEach(function (k) { self.set(p.site, k, changes[k], true); });
+        this.afterEdit();
+      },
+      saveText: function () {
+        var p = this.pop; this.popOpen = false;
+        var t = (p.value || "").trim(), v = null;
+        if (t) v = p.kind === "list" ? t.split(p.path.endsWith("address") ? /\s*[›>]\s*/ : /\s*,\s*/).filter(Boolean) : t;
+        this.set(p.site, p.path, v);
+      },
+      saveMilestone: function () {
+        var p = this.pop, d = (p.value || "").trim();
+        if (d && !/^\d{4}(-\d{2}(-\d{2})?)?$/.test(d)) { p.error = "Use YYYY-MM-DD, YYYY-MM or YYYY."; return; }
+        this.popOpen = false;
+        var cur = clone(getPath(this.siteById(p.site), p.path)) || {};
+        cur.date = d || null;
+        if (p.done) cur.done = true; else delete cur.done;
+        if ((p.note || "").trim()) cur.note = p.note.trim(); else delete cur.note;
+        if (!cur.date && !cur.done && !cur.note) cur = null;
+        this.set(p.site, p.path, cur);
+      },
+      set: function (site, path, value, quiet) {
+        var base = this.base[site] || {};
+        var pend = clone(this.pending[site]) || {};
+        if (this.base[site] && same(getPath(base, path), value)) delete pend[path]; else pend[path] = value == null ? null : clone(value);
+        var all = Object.assign({}, this.pending);
+        if (Object.keys(pend).length) all[site] = pend; else delete all[site];
+        this.pending = all;
+        if (!quiet) this.afterEdit();
+      },
+      afterEdit: function () { this.saveDraft(); this.recompute(); },
+      copyPreview: function (dst) {
+        var src = this.siteById(this.copySrc), n = Object.keys(this.copyChanges(dst)).length;
+        return "From " + src.name + ": " + n + " forms and modules will be set to Needed. Those already on or needed here are skipped.";
+      },
+      copyChanges: function (dst) {
+        var src = this.siteById(this.copySrc), d = this.siteById(dst), out = {};
+        if (!src || !src.fCell) return out;
+        if (this.copyForms) libForms.forEach(function (f) { var a = src.fCell[f.code], b = d.fCell[f.code]; if (a && (a.st === "on" || a.st === "todo") && !(b && (b.st === "on" || b.st === "todo"))) out["needs.forms." + f.code] = "needed"; });
+        if (this.copyMods) this.lib.modules.forEach(function (m) { var a = src.modCell[m.id], b = d.modCell[m.id]; if (a && (a.st === "on" || a.st === "todo") && !(b && (b.st === "on" || b.st === "todo"))) out["needs.modules." + m.id] = "needed"; });
+        return out;
+      },
+      copyNeeds: function (dst) {
+        var self = this, c = this.copyChanges(dst), n = Object.keys(c).length;
+        Object.keys(c).forEach(function (k) { self.set(dst, k, c[k], true); });
+        this.afterEdit();
+        this.say(n + " needs copied from " + esc(this.siteById(this.copySrc).name) + ". Review, then save.");
+      },
+      addSite: function () {
+        var name = this.newSite.name.trim(); if (!name) return;
+        var id = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        if (!id || this.base[id] || this.pending[id]) { this.say("A site with that name already exists."); return; }
+        var p = Object.assign({}, this.pending);
+        p[id] = { __new: { id: id, name: name, country: this.newSite.country.trim() || null, status: "planned", phase: "Feasibility & budgeting" } };
+        this.pending = p; this.afterEdit();
+        this.newSite = { name: "", country: "" }; this.addOpen = false; this.openSite(id);
+      },
+      undo: function (site, path) {
+        var pend = clone(this.pending[site]) || {}; delete pend[path];
+        var all = Object.assign({}, this.pending);
+        if (Object.keys(pend).length) all[site] = pend; else delete all[site];
+        this.pending = all; this.afterEdit();
+      },
+      discardSite: function (site) { var all = Object.assign({}, this.pending); delete all[site]; this.pending = all; this.saveStatus[site] = ""; this.afterEdit(); },
+      discardAll: function () { this.pending = {}; this.saveStatus = {}; this.reviewOpen = false; this.afterEdit(); },
+      hasPending: function (site) { return !!this.pending[site]; },
+      isPending: function (site, path, prefix) {
+        var p = this.pending[site]; if (!p || !path) return false;
+        if (path in p) return true;
+        if (prefix) return Object.keys(p).some(function (k) { return k.indexOf(path + ".") === 0; });
+        return false;
+      },
+      pendingCount: function () { var n = 0; var p = this.pending; Object.keys(p).forEach(function (s) { n += Object.keys(p[s]).length; }); return n; },
+      pendingSites: function () { var self = this; return Object.keys(this.pending).map(function (id) { return self.siteById(id).name; }).join(", "); },
+      pendingList: function () {
+        var self = this;
+        return Object.keys(this.pending).sort().map(function (id) {
+          var base = self.base[id] || {}, p = self.pending[id];
+          return {
+            site: id, name: self.siteById(id).name, isNew: !!p.__new && !self.base[id], status: self.saveStatus[id],
+            items: Object.keys(p).filter(function (k) { return k !== "__new"; }).sort().map(function (k) { return { path: k, label: self.pathLabel(k), from: self.show(getPath(base, k)), to: self.show(p[k]) }; })
+          };
+        });
+      },
+      pathLabel: function (p) {
+        var m;
+        if ((m = /^needs\.forms\.(F\d+)$/.exec(p))) { var f = libByCode[m[1]]; return m[1] + " " + (f ? f.name : ""); }
+        if ((m = /^needs\.modules\.(.+)$/.exec(p))) { var mod = this.lib.modules.find(function (x) { return x.id === m[1]; }); return "Module " + (mod ? mod.name : m[1]); }
+        if ((m = /^milestones\.(\w+)$/.exec(p))) { var r = this.milestoneRows.find(function (x) { return x[0] === m[1]; }); return r ? r[1] : m[1]; }
+        var reg = this.regRows.find(function (x) { return x[4] === p; });
+        if (reg) return reg[1];
+        return { status: "Status", phase: "Phase", name: "Site name", country: "Country", open_items: "Open items", notes: "Notes", "integration.need": "DHIS2 integration", "integration.dhis2_target": "DHIS2 target", custom_forms: "Site-specific forms" }[p] || p;
+      },
+      show: function (v) {
+        if (v == null || v === "") return "not set";
+        if (Array.isArray(v)) return v.length ? (typeof v[0] === "object" ? v.length + " item(s)" : v.join(", ")) : "empty";
+        if (typeof v === "object") return [v.date, v.done ? "done" : "", v.note].filter(Boolean).join(", ") || "not set";
+        if (typeof v === "boolean") return v ? "yes" : "no";
+        return NEED_TEXT[v] || String(v);
+      },
+      previewProfile: function (id) {
+        var meta = clone(this.base[id]) || { id: id };
+        this.applyChanges(meta, this.pending[id] || {});
+        return renderProfile(meta, (this.files[id] || {}).body || "");
+      },
+      copyText: function (txt, el) {
+        var self = this;
+        try { navigator.clipboard.writeText(txt).then(function () { self.say("Copied"); }, function () { self.selectEl(el); }); }
+        catch (e) { this.selectEl(el); }
+      },
+      selectEl: function (el) { var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); this.say("Selected. Press Ctrl+C or Cmd+C to copy."); },
+      say: function (t) { var self = this; this.toast = t; clearTimeout(this._t); this._t = setTimeout(function () { self.toast = ""; }, 3500); }
+    };
+  });
+
+  function cellState(need, built, live) {
+    if (built) {
+      if (need === "not_needed") return { st: "remove", title: "Built, but marked not needed" };
+      if (need === "on_hold") return { st: "hold", title: "Built, on hold" };
+      return { st: "on", title: "In the site build" };
+    }
+    if (need === "needed") return { st: "todo", title: "Needed, not built yet" };
+    if (need === "on_hold") return { st: "hold", title: "On hold" };
+    if (need === "not_needed") return { st: "no", title: "Not needed" };
+    return live ? { st: "no", title: "Not in the site build" } : { st: "unk", title: "No decision yet" };
+  }
+});
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+</body>
+</html>
