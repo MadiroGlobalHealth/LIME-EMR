@@ -1,6 +1,7 @@
 - [Introduction](/)
 - [Clinical Forms](forms.md)
 - [Forms QA](forms-QA.md)
+- [Testing](testing/README.md)
 - [Content Management](content-management.md)
 - [Translations](translations.md)
 - [Backup & Recovery](restic_backup.md)

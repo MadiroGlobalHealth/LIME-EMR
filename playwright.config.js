@@ -25,7 +25,12 @@ module.exports = defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    // Read by scripts/test-report.mjs to build the traceability report.
+    ['json', { outputFile: 'test-results/results.json' }],
+  ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
@@ -37,6 +42,8 @@ module.exports = defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // Configuration tests: read the repo's config files, need no server or browser.
+    { name: 'config', testDir: './tests/config' },
     // Setup project
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
     {

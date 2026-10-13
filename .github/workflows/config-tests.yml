@@ -1,0 +1,38 @@
+name: Config Tests
+
+# Fast checks on the configuration files (forms, translations, ...).
+# No server or browser needed. See docs/testing/README.md.
+on:
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'distro/configs/**'
+      - 'sites/**'
+      - 'tests/config/**'
+      - 'scripts/test-report.mjs'
+      - 'playwright.config.js'
+      - 'package.json'
+  workflow_dispatch:
+
+jobs:
+  config-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'yarn'
+
+      - name: 📦 Install dependencies
+        run: yarn install --immutable
+
+      - name: 🧪 Run config tests
+        run: yarn test:config
+
+      - name: 📊 Test report
+        if: '!cancelled()'
+        run: yarn test:report

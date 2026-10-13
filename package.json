@@ -4,7 +4,9 @@
   "description": "The OpenMRS 3 distribution for MSF OCG",
   "main": "index.js",
   "scripts": {
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=chromium",
+    "test:config": "playwright test --project=config",
+    "test:report": "node scripts/test-report.mjs",
     "test:login": "playwright test e2e/modules/openmrs/login/login.spec.ts e2e/modules/openfn/login.spec.ts"
   },
   "keywords": [],
