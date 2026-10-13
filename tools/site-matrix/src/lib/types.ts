@@ -47,7 +47,7 @@ export interface Detected {
   } | null;
 }
 
-/** A site profile: YAML frontmatter of docs/site-matrix/profiles/<id>.md. */
+/** One site under `sites` in docs/site-matrix/sites.yaml (`id` is its key there). */
 export interface Profile {
   id: string;
   name?: string;
@@ -99,16 +99,16 @@ export interface RepoConfig {
   owner: string;
   repo: string;
   branch: string;
-  dir: string;
-  library: string;
+  /** docs/site-matrix/sites.yaml */
+  file: string;
 }
 
+/** Fallback copy of sites.yaml, written by scripts/site-profiles/build.py. */
 export interface Snapshot {
   built_at: string;
   source_commit: string | null;
   repo: RepoConfig;
-  library: Library;
-  sites: (Profile & { body?: string })[];
+  text: string;
 }
 
 /** Unsaved changes for one site: profile path -> new value (null removes it). */

@@ -110,7 +110,7 @@ function Shell() {
             <Toolbar ui={ui} />
             <Legend />
             <Matrix ui={ui} onEdit={setEdit} onOpenSite={(id) => openSite(id)} />
-            <p className="text-xs text-muted-foreground">"On" comes from each site's setup in the repository (pom.xml, configs, OpenFn project). Everything else is a decision stored in <code className="font-mono">{store.cfg.dir}/&lt;site&gt;.md</code>.</p>
+            <p className="text-xs text-muted-foreground">"On" comes from each site's setup in the repository (pom.xml, configs, OpenFn project). Everything else is a decision stored in <code className="font-mono">{store.cfg.file}</code>.</p>
           </>
         )}
         <DataSource />

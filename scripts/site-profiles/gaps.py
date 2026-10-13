@@ -10,10 +10,8 @@ import os
 import re
 import sys
 
-import yaml
-
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from profiles import LIBRARY, load_all  # noqa: E402
+from profiles import catalog, load_all, load_doc  # noqa: E402
 
 
 def expand(codes):
@@ -25,10 +23,11 @@ def expand(codes):
 
 
 def main(argv):
-    lib = yaml.safe_load(open(LIBRARY, encoding="utf-8"))
+    doc = load_doc()
+    lib = catalog(doc)
     names = {f["code"]: f["name"] for f in lib["forms"]}
     mods = {m["id"]: m["name"] for m in lib["modules"]}
-    for s in load_all():
+    for s in load_all(doc):
         if argv and s["id"] not in argv:
             continue
         det = s.get("detected") or {}

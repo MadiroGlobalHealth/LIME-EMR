@@ -1,9 +1,8 @@
 # LIME Site Matrix app
 
 Web app for the implementation team: what each LIME EMR site runs (read from the repo) and what
-each site needs. Any value can be edited in place; saving commits the site profile
-(`docs/site-matrix/profiles/<site>.md`) to GitHub under the editor's own account, so the history
-shows who changed what.
+each site needs. Any value can be edited in place; saving commits `docs/site-matrix/sites.yaml`
+to GitHub under the editor's own account, so the history shows who changed what.
 
 Stack: React 19, TypeScript, Vite, Tailwind CSS 4, [shadcn/ui](https://ui.shadcn.com) (new-york style,
 neutral theme) on Radix, TanStack Table, cmdk (⌘K search), sonner (notifications). It is a static site plus a small
@@ -16,13 +15,16 @@ neutral theme) on Radix, TanStack Table, cmdk (⌘K search), sonner (notificatio
   registration, DHIS2, notes (Overview), then Forms, Modules and History. Each form and module is
   answered with Needed / Not needed / Later. Links to a site can be shared (`#/site/<id>`).
 - **Compare** (`#/compare`): every site side by side, with the same data, for the implementation team.
-- On load it reads every profile live from GitHub (`api.github.com`). The repository is public, so
-  reading needs no sign-in. If GitHub cannot be reached, it shows `src/snapshot.json`, written by
-  `scripts/site-profiles/build.py`.
-- To edit, people sign in with GitHub. Saving writes one commit per changed profile, with a message
-  that lists each change and the optional "why" note. The page checks that the account can push.
+- On load it reads `docs/site-matrix/sites.yaml` live from GitHub (`api.github.com`). The repository
+  is public, so reading needs no sign-in. If GitHub cannot be reached, it shows `src/snapshot.json`
+  (a copy of the file written by `scripts/site-profiles/build.py`).
+- To edit, people sign in with GitHub. Saving writes one commit with every change, titled
+  `site-matrix(<site ids>): ...`, listing each change and the optional "why" note. Right before
+  writing, the app reads the file again and applies the changes to that version, so someone else
+  saving at the same time does not lose their edits (a refused write is retried). The app checks
+  that the account can push.
 - Unsaved changes stay in the browser until saved or discarded.
-- Repo facts (`detected` in each profile) are never written by the app; the `site-profiles` skill
+- Repo facts (`detected` under each site) are never written by the app; the `site-profiles` skill
   refreshes them from the repo.
 
 ## Develop
@@ -31,9 +33,9 @@ neutral theme) on Radix, TanStack Table, cmdk (⌘K search), sonner (notificatio
 cd tools/site-matrix
 npm install
 npm run dev          # http://localhost:5173
-npm test             # unit tests: profile round-trip against the real profiles, model, commit messages
+npm test             # unit tests: sites.yaml round-trip against the Python writer, model, commit messages
 npm run build        # type check + production build in dist/
-python3 ../../scripts/site-profiles/build.py   # refresh src/snapshot.json from the profiles
+python3 ../../scripts/site-profiles/build.py   # refresh src/snapshot.json from sites.yaml
 ```
 
 End-to-end test against a simulated GitHub API: `npm run build && npx vite preview --port 4173 &`

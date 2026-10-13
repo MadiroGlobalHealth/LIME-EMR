@@ -2,7 +2,7 @@ import * as React from "react";
 import { ArrowLeft, Copy, ExternalLink, Github, Info, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useMatrix } from "@/lib/store";
-import { applyChanges, clone, expandCodes, renderProfile, same } from "@/lib/profile";
+import { applyChanges, clone, dumpYaml, expandCodes, same, siteEntry } from "@/lib/profile";
 import { explain, type Commit } from "@/lib/github";
 import { fmtDate, MILESTONES, parseDate, REG_ROWS, regValue, type FormRow, type SiteView } from "@/lib/model";
 import type { Milestone, Need, Profile, SiteStatus } from "@/lib/types";
@@ -452,7 +452,18 @@ function History({ s }: { s: SiteView }) {
   const [state, setState] = React.useState<{ loading: boolean; error?: string; items: Commit[] }>({ loading: true, items: [] });
   React.useEffect(() => {
     let live = true;
-    gh.commits(`${cfg.dir}/${s.id}.md`, 25).then((items) => live && setState({ loading: false, items }), (e) => live && setState({ loading: false, items: [], error: explain(e, cfg) }));
+    // Saves to sites.yaml name the sites in the title: "site-matrix(mombasa,bunia): ...".
+    // Older changes were made to one file per site (docs/site-matrix/profiles/<id>.md).
+    const mine = (c: Commit) => (/^site-matrix\(([^)]*)\)/.exec(c.commit.message)?.[1] || "").split(",").includes(s.id);
+    Promise.all([
+      gh.commits(cfg.file, 100).then((list) => list.filter(mine)),
+      gh.commits(`docs/site-matrix/profiles/${s.id}.md`, 25).catch(() => [] as Commit[]),
+    ]).then(([a, b]) => {
+      const seen = new Set<string>();
+      const items = [...a, ...b].filter((c) => !seen.has(c.sha) && seen.add(c.sha))
+        .sort((x, y) => (y.commit.author?.date || "").localeCompare(x.commit.author?.date || "")).slice(0, 30);
+      if (live) setState({ loading: false, items });
+    }, (e) => live && setState({ loading: false, items: [], error: explain(e, cfg) }));
     return () => { live = false; };
   }, [gh, cfg, s.id]);
   return (
@@ -466,8 +477,7 @@ function History({ s }: { s: SiteView }) {
           <ol className="divide-y">
             {state.items.map((c) => {
               const d = c.commit.author?.date ? new Date(c.commit.author.date) : null;
-              const [title, ...rest] = c.commit.message.split("\n");
-              const lines = rest.map((l) => l.trim()).filter((l) => l && !l.startsWith("Edited in the") && !/^Co-Authored-By/i.test(l));
+              const { title, lines } = describeCommit(c.commit.message, s.name);
               return (
                 <li key={c.sha} className="grid gap-1 px-5 py-3.5">
                   <a href={c.html_url} target="_blank" rel="noreferrer" className="group flex items-start justify-between gap-3">
@@ -487,15 +497,32 @@ function History({ s }: { s: SiteView }) {
   );
 }
 
+/**
+ * A commit as this site's history shows it. Saves from the app list changes as "- Label: from -> to",
+ * grouped under "Site name:" when several sites were saved together; only this site's part is shown.
+ */
+function describeCommit(message: string, siteName: string) {
+  const [head, ...blocks] = message.split(/\n\s*\n/);
+  const title = head.replace(/^site-matrix\([^)]*\):\s*/, "");
+  const keep = (b: string) => b && !b.startsWith("Edited in the") && !/^Co-Authored-By|^Claude-Session/im.test(b);
+  const section = blocks.find((b) => b.startsWith(siteName + ":\n"));
+  const multi = blocks.some((b) => /^[^\n-][^\n]*:\n- /.test(b));
+  if (!multi) return { title, lines: blocks.filter(keep).map((b) => b.replace(/\n/g, " ")) };
+  const items = (section || "").split("\n").slice(1);
+  const short = items.slice(0, 2).map((l) => l.replace(/^- /, "").replace(/: .* -> /, ": ")).join("; ") + (items.length > 2 ? ` and ${items.length - 2} more` : "");
+  const notes = blocks.filter((b) => keep(b) && !/^[^\n-][^\n]*:\n- /.test(b));
+  return { title: short || title, lines: [items.join(" "), ...notes].filter(Boolean) };
+}
+
 function ProfileFile({ id }: { id: string }) {
-  const { base, files, pending, cfg } = useMatrix();
-  const text = renderProfile(applyChanges(clone(base[id]) || ({ id } as Profile), pending[id] || {}), files[id]?.body || "");
+  const { base, pending, cfg } = useMatrix();
+  const text = dumpYaml({ [id]: siteEntry(applyChanges(clone(base[id]) || ({ id } as Profile), pending[id] || {})) });
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="file" className="border-b-0">
-        <AccordionTrigger className="text-sm text-muted-foreground">Show the profile file ({cfg.dir}/{id}.md)</AccordionTrigger>
+        <AccordionTrigger className="text-sm text-muted-foreground">Show this site in {cfg.file}</AccordionTrigger>
         <AccordionContent className="grid gap-2">
-          <p className="text-sm text-muted-foreground">As it will be saved, unsaved changes included.</p>
+          <p className="text-sm text-muted-foreground">This site's entry under <code>sites:</code>, as it will be saved, unsaved changes included.</p>
           <Button variant="outline" size="sm" className="w-fit" onClick={() => navigator.clipboard.writeText(text).then(() => toast.success("Copied"), () => toast.error("Copy failed"))}><Copy /> Copy</Button>
           <pre className="max-h-[60vh] overflow-auto rounded-md border bg-muted p-3 font-mono text-[11.5px] leading-relaxed">{text}</pre>
         </AccordionContent>

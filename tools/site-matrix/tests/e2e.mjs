@@ -4,7 +4,7 @@
 // Covers: home cards, site page editing, anonymous live load, token sign-in (bad then good), editing a status, an ID prefix,
 // a milestone and a form need, saving (one commit per site), commit history, ⌘K and CSV export.
 import { createRequire } from "node:module";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,9 +17,11 @@ const URL_ = process.env.APP_URL || "http://localhost:4173/";
 const SHOTS = process.env.SHOTS || "";
 
 const store = {};
-for (const f of readdirSync(`${ROOT}/docs/site-matrix/profiles`)) store[`docs/site-matrix/profiles/${f}`] = readFileSync(`${ROOT}/docs/site-matrix/profiles/${f}`, "utf8");
-store["docs/site-matrix/library.yaml"] = readFileSync(`${ROOT}/docs/site-matrix/library.yaml`, "utf8");
+const FILE = "docs/site-matrix/sites.yaml";
+store[FILE] = readFileSync(`${ROOT}/${FILE}`, "utf8");
 const original = { ...store };
+// Simulates someone else saving between the app's read and its write, once.
+let race = true;
 const sha = (t) => createHash("sha1").update(t).digest("hex");
 const commits = [];
 let failures = 0;
@@ -44,6 +46,7 @@ await ctx.route(/api\.github\.com/, async (r) => {
   if (req.method() === "PUT") {
     if (auth !== "Bearer good") return json({ message: "Bad credentials" }, 401);
     const body = JSON.parse(req.postData());
+    if (race) { race = false; store[p] = store[p].replace("country: Syria", "country: Syria (Homs)"); }
     if (store[p] !== undefined && body.sha !== sha(store[p])) return json({ message: "sha mismatch" }, 409);
     store[p] = Buffer.from(body.content, "base64").toString("utf8");
     const c = { sha: sha(store[p] + commits.length), path: p, message: body.message, branch: body.branch };
@@ -111,11 +114,19 @@ await page.keyboard.press("Escape");
 
 await page.getByLabel("Commit note").fill("Agreed in the weekly LIME call");
 await page.getByRole("button", { name: "Save changes" }).click();
-await page.getByText(/Committed to/).waitFor({ timeout: 8000 });
-check(commits.length === 2, `2 commits (one per site): ${commits.map((c) => c.message.split("\n")[0]).join(" | ")}`);
-const diff = (p) => { const a = original[p].split("\n"), b = store[p].split("\n"); return { add: b.filter((l) => !a.includes(l)), del: a.filter((l) => !b.includes(l)) }; };
-const m = diff("docs/site-matrix/profiles/mombasa.md");
-check(JSON.stringify(m.del) === JSON.stringify(["status: preparation", "  id_prefix: null"]), `mombasa diff only touches changed lines: +${JSON.stringify(m.add)} -${JSON.stringify(m.del)}`);
+await page.getByText(/Saved to /).first().waitFor({ timeout: 8000 });
+check(commits.length === 1 && /^site-matrix\((bunia,mombasa|mombasa,bunia)\): /.test(commits[0].message), `1 commit naming both sites, after a refused write: ${commits.map((c) => c.message.split("\n")[0]).join(" | ")}`);
+check(store[FILE].includes("country: Syria (Homs)"), "a change saved meanwhile by someone else is kept");
+// Lines added and removed, counting duplicates.
+const diff = (p) => {
+  const count = (lines) => lines.reduce((m, l) => m.set(l, (m.get(l) || 0) + 1), new Map());
+  const a = count(original[p].split("\n")), b = count(store[p].split("\n"));
+  const more = (x, y) => [...x].flatMap(([l, n]) => Array(Math.max(0, n - (y.get(l) || 0))).fill(l));
+  return { add: more(b, a).filter((l) => !l.includes("Syria")), del: more(a, b).filter((l) => !l.includes("Syria")) };
+};
+const m = diff(FILE);
+check(JSON.stringify(m.del) === JSON.stringify(["    status: preparation", "      id_prefix: null"]) && ["    status: live", "      id_prefix: KE-MBA-", "        date: '2026-12-01'", "        F35: needed"].every((l) => m.add.includes(l)) && m.add.length <= 7,
+  `sites.yaml diff only touches changed lines: +${JSON.stringify(m.add)} -${JSON.stringify(m.del)}`);
 check(commits.every((c) => c.message.includes("Agreed in the weekly LIME call")), "commit note is in each commit message");
 
 // History tab

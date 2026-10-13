@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Extract what each LIME site actually configures and write it into its profile.
+"""Extract what each LIME site actually configures and write it into docs/site-matrix/sites.yaml.
 
 For every folder under sites/, reads the build and configuration files and
-writes the result under the `detected:` key of docs/site-matrix/profiles/<site>.md.
-Everything else in a profile (status, milestones, needs, notes) is maintained by
-people and is left untouched. Profiles that do not exist yet are created.
+writes the result under `sites.<site>.detected`. Everything else about a site
+(status, milestones, needs, notes) is maintained by people and is left
+untouched. Sites that are not in the file yet are added. Distro forms missing
+from `catalog.forms` are added with program "Unassigned".
 
     python3 scripts/site-profiles/extract.py            # all sites
     python3 scripts/site-profiles/extract.py mosul      # one site
@@ -25,7 +26,7 @@ import xml.etree.ElementTree as ET
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from profiles import ROOT, LIBRARY, load_profile, save_profile, profile_path  # noqa: E402
+from profiles import ROOT, SITES_FILE, load_doc, save_doc  # noqa: E402
 
 DISTRO = os.path.join(ROOT, "distro", "configs")
 INIT = os.path.join("configs", "openmrs", "initializer_config")
@@ -100,14 +101,13 @@ def site_forms(pom_text, all_forms):
 
 # ---------------------------------------------------------------- modules
 
-def site_modules(pom_text):
+def site_modules(pom_text, catalog_modules):
     spa = json.load(open(os.path.join(DISTRO, "openmrs", "frontend_assembly", "spa-assemble-config.json")))
     apps = set(spa.get("frontendModules", {})) - set(spa.get("frontendModuleExcludes", []))
     m = re.search(r"<name>modulesToRemove</name>\s*<value>([^<]*)</value>", pom_text)
     removed = {a.strip() for a in m.group(1).split(",")} if m else set()
     apps -= removed
-    lib = yaml.safe_load(open(LIBRARY))
-    return [mod["id"] for mod in lib["modules"] if any(a in apps for a in mod["apps"])], sorted(removed)
+    return [mod["id"] for mod in catalog_modules if any(a in apps for a in mod["apps"])], sorted(removed)
 
 
 # ---------------------------------------------------------------- registration
@@ -256,21 +256,19 @@ def project_hashes():
     return out
 
 
-def sync_library(all_forms):
+def sync_catalog(doc, all_forms):
     """Append distro forms missing from the catalog so new forms show up."""
-    lib_text = open(LIBRARY, encoding="utf-8").read()
-    known = set(re.findall(r"code: (F\d{2})", lib_text))
+    forms = doc["catalog"].setdefault("forms", [])
+    known = {f["code"] for f in forms}
     missing = [c for c in sorted(all_forms) if c not in known]
-    if missing:
-        lines = "".join('  - {code: %s, name: %s, program: "Unassigned"}\n' % (c, json.dumps(all_forms[c]["name"] or c)) for c in missing)
-        lib_text = lib_text.replace("\n# Key modules.", lines + "\n# Key modules.", 1)
-        open(LIBRARY, "w", encoding="utf-8").write(lib_text)
+    forms += [{"code": c, "name": all_forms[c]["name"] or c, "program": "Unassigned"} for c in missing]
     return missing
 
 
 def main(argv):
+    doc = load_doc()
     all_forms = distro_forms()
-    added = sync_library(all_forms)
+    added = sync_catalog(doc, all_forms)
     hashes = project_hashes()
     commit = git_commit()
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -280,7 +278,7 @@ def main(argv):
     for d in site_dirs:
         sid = os.path.basename(d)
         pom = open(os.path.join(d, "pom.xml"), encoding="utf-8").read()
-        mods, removed = site_modules(pom)
+        mods, removed = site_modules(pom, doc["catalog"].get("modules") or [])
         detected = {
             "generated_at": now,
             "source_commit": commit,
@@ -292,18 +290,18 @@ def main(argv):
             "locations": locations(d),
             "integration": openfn(d, hashes),
         }
-        meta, body = load_profile(sid)
-        created = not meta
+        created = sid not in doc["sites"]
         if created:
-            meta = {"id": sid, "name": sid.capitalize(), "country": None, "status": "live", "phase": None}
-        meta["detected"] = detected
-        save_profile(sid, meta, body)
+            doc["sites"][sid] = {"name": sid.capitalize(), "country": None, "status": "live", "phase": None}
+        doc["sites"][sid]["detected"] = detected
         print("%s %s: %d forms, %d modules, integration %s" % (
-            "created" if created else "updated", rel(profile_path(sid)),
+            "added" if created else "updated", sid,
             len(site_forms(pom, all_forms)), len(mods),
             detected["integration"]["status"] if detected["integration"] else "none"))
+    save_doc(doc)
+    print("wrote " + rel(SITES_FILE))
     if added:
-        print("Added to library.yaml (program Unassigned): " + ", ".join(added))
+        print("Added to catalog.forms (program Unassigned): " + ", ".join(added))
 
 
 if __name__ == "__main__":

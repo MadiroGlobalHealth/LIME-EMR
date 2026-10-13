@@ -219,14 +219,29 @@ export function pathLabel(path: string, lib: Library): string {
   return named[path] || path;
 }
 
-export function commitMessage(id: string, changes: Record<string, unknown>, before: Profile | undefined, lib: Library, note: string) {
-  const items = Object.keys(changes).filter((k) => k !== "__new").map((k) => ({ label: pathLabel(k, lib), from: show(getPathSafe(before, k)), to: show(changes[k]) }));
-  const created = changes.__new && !before;
-  const title = created
-    ? "Add site " + ((changes.__new as Profile).name || id)
-    : items.slice(0, 2).map((c) => `${c.label}: ${c.to}`).join("; ") + (items.length > 2 ? ` and ${items.length - 2} more` : "");
-  const lines = [`site-matrix(${id}): ${title}`, ""];
-  for (const c of items) lines.push(`- ${c.label}: ${c.from} -> ${c.to}`);
+/** One commit for all saved sites. The title names the site ids in parentheses, which the History tab filters on. */
+export function commitMessage(ids: string[], pending: Pending, before: Record<string, Profile>, lib: Library, note: string) {
+  const summary = (id: string) => {
+    const changes = pending[id] || {};
+    const prev = before[id];
+    const items = Object.keys(changes).filter((k) => k !== "__new").map((k) => ({ label: pathLabel(k, lib), from: show(getPathSafe(prev, k)), to: show(changes[k]) }));
+    const created = !!changes.__new && !prev;
+    const name = (changes.__new as Profile | undefined)?.name || prev?.name || id;
+    const title = created
+      ? "Add site " + name
+      : items.slice(0, 2).map((c) => `${c.label}: ${c.to}`).join("; ") + (items.length > 2 ? ` and ${items.length - 2} more` : "");
+    return { name, title, count: items.length + (created ? 1 : 0), lines: items.map((c) => `- ${c.label}: ${c.from} -> ${c.to}`) };
+  };
+  const parts = ids.map((id) => ({ id, ...summary(id) }));
+  const title = parts.length === 1
+    ? parts[0].title
+    : `${parts.reduce((n, p) => n + p.count, 0)} changes in ${parts.map((p) => p.name).join(", ")}`;
+  const lines = [`site-matrix(${ids.join(",")}): ${title}`];
+  for (const p of parts) {
+    lines.push("");
+    if (parts.length > 1) lines.push(`${p.name}:`);
+    lines.push(...(p.lines.length ? p.lines : [`- ${p.title}`]));
+  }
   if (note.trim()) lines.push("", note.trim());
   lines.push("", "Edited in the LIME Site Matrix app.");
   return lines.join("\n");

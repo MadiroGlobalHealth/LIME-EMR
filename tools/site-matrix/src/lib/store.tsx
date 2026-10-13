@@ -1,14 +1,16 @@
 import * as React from "react";
 import { toast } from "sonner";
-import yaml from "js-yaml";
 import snapshotJson from "@/snapshot.json";
 import { createGitHub, explain, GitHubError } from "./github";
 import { clearSession, loadSession, saveSession, takeSessionFromUrl, type Session } from "./auth";
-import { applyChanges, clone, getPath, parseProfile, renderProfile, same, slugify } from "./profile";
+import { applyPending, clone, getPath, parseDoc, renderDoc, same, slugify, type SitesDoc } from "./profile";
 import { buildView, commitMessage, type MatrixView } from "./model";
 import type { Library, Pending, Profile, RepoConfig, SiteChanges, Snapshot } from "./types";
 
+const MAX_TRIES = 3;
+
 const snapshot = snapshotJson as unknown as Snapshot;
+const initial = parseDoc(snapshot.text);
 
 function repoConfig(): RepoConfig {
   const q = new URLSearchParams(location.search);
@@ -21,7 +23,6 @@ function repoConfig(): RepoConfig {
   };
 }
 
-type FileInfo = { sha?: string | null; body: string; text?: string };
 type Source = "snapshot" | "loading" | "github";
 export interface User { login: string; name?: string; avatar_url?: string; canPush: boolean }
 
@@ -35,16 +36,16 @@ function useStored<T>(key: string, initial: T) {
 
 function useMatrixState() {
   const cfg = React.useMemo(repoConfig, []);
-  const [lib, setLib] = React.useState<Library>(snapshot.library);
-  const [base, setBase] = React.useState<Record<string, Profile>>(() => Object.fromEntries(snapshot.sites.map(({ body: _b, ...p }) => [p.id, p as Profile])));
-  const [files, setFiles] = React.useState<Record<string, FileInfo>>(() => Object.fromEntries(snapshot.sites.map((s) => [s.id, { body: s.body || "" }])));
+  const [lib, setLib] = React.useState<Library>(initial.library);
+  const [base, setBase] = React.useState<Record<string, Profile>>(initial.sites);
+  const [fileText, setFileText] = React.useState(snapshot.text);
   const [pending, setPending] = useStored<Pending>(`sm-draft:${cfg.owner}/${cfg.repo}@${cfg.branch}`, {});
   const [source, setSource] = React.useState<Source>("loading");
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [user, setUser] = React.useState<User | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const [saveErrors, setSaveErrors] = React.useState<Record<string, string>>({});
+  const [saveError, setSaveError] = React.useState<string | null>(null);
   const [commitNote, setCommitNote] = React.useState("");
 
   const tokenRef = React.useRef<string | null>(null);
@@ -53,34 +54,25 @@ function useMatrixState() {
   const view: MatrixView = React.useMemo(() => buildView(base, pending, lib), [base, pending, lib]);
   const canEdit = !!user?.canPush && source === "github";
 
+  const adopt = React.useCallback((text: string) => {
+    const p = parseDoc(text);
+    setBase(p.sites);
+    if (p.library.forms.length) setLib(p.library);
+    setFileText(text);
+  }, []);
+
   const load = React.useCallback(async (announce = false) => {
     setSource("loading");
     try {
-      const entries = await gh.list(cfg.dir);
-      const ids = entries.filter((e) => e.type === "file" && e.name.endsWith(".md")).map((e) => e.name.replace(/\.md$/, ""));
-      try {
-        const l = yaml.load((await gh.read(cfg.library)).text) as Library;
-        if (l?.forms && l?.modules) setLib(l);
-      } catch { /* keep the snapshot library */ }
-      const results = await Promise.all(ids.map((id) => gh.read(`${cfg.dir}/${id}.md`).then((f) => [id, f] as const, () => [id, null] as const)));
-      const nextBase: Record<string, Profile> = {}, nextFiles: Record<string, FileInfo> = {};
-      let failed = 0;
-      for (const [id, f] of results) {
-        if (!f) { failed++; continue; }
-        const { meta, body } = parseProfile(f.text);
-        nextBase[id] = { ...meta, id: meta.id || id };
-        nextFiles[id] = { sha: f.sha, body, text: f.text };
-      }
-      setBase((prev) => { for (let i = 0; i < results.length; i++) if (!results[i][1] && prev[results[i][0]]) nextBase[results[i][0]] = prev[results[i][0]]; return nextBase; });
-      setFiles((prev) => ({ ...prev, ...nextFiles }));
+      adopt((await gh.read(cfg.file)).text);
       setSource("github");
-      setLoadError(failed ? `${failed} profile(s) could not be read from GitHub; showing the snapshot for those.` : null);
-      if (announce) toast.success("Loaded the latest profiles from GitHub");
+      setLoadError(null);
+      if (announce) toast.success("Loaded the latest version from GitHub");
     } catch (e) {
       setSource("snapshot");
-      setLoadError(`${explain(e, cfg)} Showing the snapshot from ${snapshot.source_commit || "the last build"}.`);
+      setLoadError(`${explain(e, cfg)} Showing the saved copy from ${snapshot.source_commit || "the last build"}.`);
     }
-  }, [gh, cfg]);
+  }, [gh, cfg, adopt]);
 
   const identify = React.useCallback(async (s: Session) => {
     tokenRef.current = s.token;
@@ -147,7 +139,7 @@ function useMatrixState() {
     return out;
   }), [setPending]);
   const discardSite = React.useCallback((site: string) => setPending((all) => { const o = { ...all }; delete o[site]; return o; }), [setPending]);
-  const discardAll = React.useCallback(() => { setPending({}); setSaveErrors({}); }, [setPending]);
+  const discardAll = React.useCallback(() => { setPending({}); setSaveError(null); }, [setPending]);
 
   const addSite = React.useCallback((name: string, country: string) => {
     const id = slugify(name);
@@ -156,45 +148,50 @@ function useMatrixState() {
     return id;
   }, [base, pending, setPending]);
 
-  // ---- saving: one commit per site profile, authored by the signed-in person
-  const saveSite = React.useCallback(async (id: string, changes: SiteChanges) => {
-    const path = `${cfg.dir}/${id}.md`;
-    const isNew = !base[id];
-    const remote = isNew ? null : await gh.read(path);
-    let meta: Profile, body: string;
-    if (remote) ({ meta, body } = parseProfile(remote.text)); else { meta = { id }; body = ""; }
-    applyChanges(meta, changes);
-    const text = renderProfile(meta, body);
-    if (remote && text === remote.text) return { meta, body, sha: remote.sha, text, commit: null as string | null };
-    const res = await gh.write(path, text, commitMessage(id, changes, base[id], lib, commitNote), remote?.sha);
-    const fresh = await gh.read(path).catch(() => null);
-    return { meta, body, sha: fresh?.sha || null, text, commit: res.sha };
-  }, [cfg, base, gh, lib, commitNote]);
-
+  // ---- saving: one commit with every site's changes, authored by the signed-in person.
+  // The file is read again right before writing and the changes are applied to that version, so
+  // edits saved meanwhile by someone else (other sites or other fields) are kept. If someone saves
+  // in between, GitHub refuses the write and it is retried on the newer version.
   const saveAll = React.useCallback(async () => {
     if (!canEdit || saving) return;
     setSaving(true);
-    const ok: string[] = [], errors: Record<string, string> = {};
-    for (const [id, changes] of Object.entries(pending)) {
-      try {
-        const r = await saveSite(id, changes);
-        setBase((b) => ({ ...b, [id]: r.meta }));
-        setFiles((f) => ({ ...f, [id]: { sha: r.sha, body: r.body, text: r.text } }));
-        setPending((all) => { const o = { ...all }; delete o[id]; return o; });
-        ok.push(`${view.sites.find((s) => s.id === id)?.name || id}${r.commit ? " " + r.commit.slice(0, 7) : ""}`);
-      } catch (e) {
-        errors[id] = explain(e, cfg);
+    setSaveError(null);
+    const names = (ids: string[]) => ids.map((id) => view.sites.find((s) => s.id === id)?.name || id);
+    try {
+      for (let attempt = 1; ; attempt++) {
+        const remote = await gh.read(cfg.file);
+        const { doc, sites: before } = parseDoc(remote.text);
+        const changed = applyPending(doc as SitesDoc, pending);
+        const text = renderDoc(doc as SitesDoc);
+        if (!changed.length || text === remote.text) {
+          adopt(remote.text);
+          setPending({});
+          toast("Nothing to save: GitHub already has these values.");
+          break;
+        }
+        try {
+          const res = await gh.write(cfg.file, text, commitMessage(changed, pending, before, lib, commitNote), remote.sha);
+          adopt(text);
+          setPending({});
+          setCommitNote("");
+          toast.success(`Saved to ${cfg.branch}`, { description: `${names(changed).join(", ")}${res.sha ? " · " + res.sha.slice(0, 7) : ""}` });
+          break;
+        } catch (e) {
+          if (e instanceof GitHubError && (e.status === 409 || e.status === 422) && attempt < MAX_TRIES) continue;
+          throw e;
+        }
       }
+    } catch (e) {
+      const msg = explain(e, cfg);
+      setSaveError(msg);
+      toast.error("Your changes were not saved", { description: msg });
+    } finally {
+      setSaving(false);
     }
-    setSaveErrors(errors);
-    setSaving(false);
-    if (ok.length) toast.success(`Committed to ${cfg.branch}`, { description: ok.join(", ") });
-    if (Object.keys(errors).length) toast.error("Some changes were not saved", { description: Object.values(errors)[0] });
-    else setCommitNote("");
-  }, [canEdit, saving, pending, saveSite, view.sites, cfg, setPending]);
+  }, [canEdit, saving, pending, gh, cfg, lib, commitNote, view.sites, adopt, setPending]);
 
   return {
-    cfg, snapshot, lib, base, files, pending, view, source, loadError, session, user, canEdit, saving, saveErrors, commitNote,
+    cfg, snapshot, lib, base, fileText, pending, view, source, loadError, session, user, canEdit, saving, saveError, commitNote,
     setCommitNote, load, signInWithToken, signOut, set, setMany, undo, discardSite, discardAll, addSite, saveAll, gh,
   };
 }

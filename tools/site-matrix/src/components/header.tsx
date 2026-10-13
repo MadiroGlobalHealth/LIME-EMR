@@ -46,7 +46,7 @@ export function Header({ page, onHome, onCompare, onSearch, onSignIn, dark, onTh
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => load(true)}><RefreshCw /> Reload from GitHub</DropdownMenuItem>
-                <DropdownMenuItem asChild><a href={`https://github.com/${cfg.owner}/${cfg.repo}/tree/${cfg.branch}/${cfg.dir}`} target="_blank" rel="noreferrer"><Github /> Open the files on GitHub</a></DropdownMenuItem>
+                <DropdownMenuItem asChild><a href={`https://github.com/${cfg.owner}/${cfg.repo}/blob/${cfg.branch}/${cfg.file}`} target="_blank" rel="noreferrer"><Github /> Open sites.yaml on GitHub</a></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={signOut}><LogOut /> Sign out</DropdownMenuItem>
               </DropdownMenuContent>
