@@ -7,10 +7,10 @@ maintains. This script reads a form tab, compares every rule with the form
 JSON in this repository, and lists the test cases those rules imply, in plain
 language, each marked as matching the configuration or not.
 
-Two optional additions to the workbook are read when present (see
-docs/testing/metadonnees/README.md): the "Test - If I do..." and
-"Test - I should see..." columns at the end of a form tab, and a
-"Test Scenarios" tab. Nothing is written back to the workbook.
+Tests MSF write themselves use existing places of the workbook (see
+docs/testing/metadonnees/README.md): "Test: <what I do> -> <what I should
+see>" lines in the Comments column of a form tab, and steps in the
+"User flow template" tab. Nothing is written back to the workbook.
 
 Usage:
   python3 scripts/metadata-check.py <metadata.xlsx> --form "F17-Surgery Admission" [--out report.md]
@@ -36,8 +36,9 @@ import lime_forms as fts  # noqa: E402
 # Metadata tab columns (0-based), header on row 2.
 COLUMNS = {"num": "Question #", "question": "Question", "label": "Label if different", "lower": "Lower limit", "upper": "Upper limit",
            "skip": "Skip logic", "mandatory": "Mandatory", "rendering": "Rendering", "qid": "Question ID",
-           "test_do": "Test - If I do...", "test_see": "Test - I should see..."}
-SCENARIOS_TAB = "Test Scenarios"
+           "comments": "Comments"}
+SCENARIOS_TAB = "User flow template"
+TEST_LINE = re.compile(r"^\s*test\s*:\s*(.+?)\s*(?:->|→|=>)\s*(.+?)\s*$", re.I)
 EMPTY = {"", "{leave blank}", "na", "n/a", "no", "false", "\xa0"}
 SKIP_RENDERINGS = {"markdown", "order-basket", "workspace-launcher"}
 
@@ -78,8 +79,7 @@ def metadata_rows(ws):
             "skip": None if blank(get("skip")) else str(get("skip")).strip(),
             "mandatory": str(get("mandatory") or "").strip().lower() in {"yes", "true", "oui"},
             "rendering": str(get("rendering") or "").strip(),
-            "test_do": None if blank(get("test_do")) else str(get("test_do")).strip(),
-            "test_see": None if blank(get("test_see")) else str(get("test_see")).strip(),
+            "tests": [m.groups() for m in (TEST_LINE.match(line) for line in str(get("comments") or "").splitlines()) if m],
         })
     return out
 
@@ -195,24 +195,26 @@ def answer_concepts(q):
 # --- comparison and test cases ------------------------------------------------
 
 def read_scenarios(wb):
-    """Rows of the optional Test Scenarios tab, grouped by the Fxx prefix of their Form column."""
+    """Steps of the User flow template tab (Step, Action, Description, Data, User, Permission,
+    Comment), grouped by the form code that prefixes Step (F17-1 -> F17)."""
     out = {}
     if SCENARIOS_TAB not in wb.sheetnames:
         return out
     rows = list(wb[SCENARIOS_TAB].iter_rows(values_only=True))
-    header = next((i for i, r in enumerate(rows[:5]) if r and "If I do..." in [str(x).strip() for x in r if x]), None)
+    header = next((i for i, r in enumerate(rows[:5]) if r and "Action" in [str(x).strip() for x in r if x]), None)
     if header is None:
         return out
     names = [str(x).strip() if x else "" for x in rows[header]]
     col = lambda name: names.index(name) if name in names else None
-    c_form, c_who, c_do, c_see = col("Form"), col("Who (role, site)"), col("If I do..."), col("I should see...")
+    c_step, c_do, c_see, c_who = col("Step"), col("Action"), col("Description"), col("User")
+    cell = lambda r, c: str(r[c]).strip() if c is not None and c < len(r) and r[c] is not None else ""
     for r in rows[header + 1:]:
-        if c_do is None or blank(r[c_do]):
+        if not cell(r, c_do):
             continue
-        form = str(r[c_form] or "").strip() if c_form is not None else ""
-        key = form.split("-")[0] if re.match(r"F\d\d", form) else "(other)"
-        out.setdefault(key, []).append({"form": form, "who": r[c_who] if c_who is not None else "",
-                                        "do": str(r[c_do]).strip(), "see": str(r[c_see] or "").strip() if c_see is not None else ""})
+        step = cell(r, c_step)
+        m = re.match(r"(F\d\d)", step)
+        out.setdefault(m.group(1) if m else "(other)", []).append(
+            {"step": step, "who": cell(r, c_who), "do": cell(r, c_do), "see": cell(r, c_see)})
     return out
 
 
@@ -342,12 +344,12 @@ def check_form(ws, form_path, scenarios=()):
         if q.get("id") and q["id"] not in meta_ids and rendering not in fts.SKIP_RENDERINGS | SKIP_RENDERINGS and q.get("type") != "obsGroup":
             findings.append((q.get("label", q["id"]), WARN, "Question du formulaire absente des métadonnées", "structure"))
 
-    # Tests MSF wrote themselves: optional columns of the tab, and the Test Scenarios tab.
+    # Tests MSF wrote themselves: "Test:" lines in Comments, and User flow template steps.
     for r in meta:
-        if r["test_do"] or r["test_see"]:
-            case(r["question"], r["test_do"] or "", r["test_see"] or "", "Colonnes Test de l'onglet", TODO, kind="custom")
+        for do, see in r["tests"]:
+            case(r["question"], do, see, "Colonne Comments (Test:)", TODO, kind="custom")
     for sc in scenarios:
-        case(sc["who"] or "", sc["do"], sc["see"], f"Onglet {SCENARIOS_TAB}", TODO, kind="custom")
+        case(sc["who"] or "", sc["do"], sc["see"], f"{SCENARIOS_TAB}, étape {sc['step']}", TODO, kind="custom")
     return cases, findings
 
 
@@ -417,6 +419,10 @@ def main():
             custom = sum(c["kind"] == "custom" for c in cases)
             lines.append(f"| {ws.title} | {tracker_cell(cases, findings, 'structure', day)} | {tracker_cell(cases, findings, 'skip', day)} | "
                          f"{custom or ''} |")
+        other = scenarios.get("(other)", [])
+        if other:
+            lines += ["", f"{len(other)} étape(s) de « {SCENARIOS_TAB} » hors formulaire (rôles, rapports...) : "
+                      + ", ".join(sc["step"] or "?" for sc in other)]
         md = "\n".join(lines) + "\n"
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

@@ -3,8 +3,8 @@
 Tout se passe dans le classeur de métadonnées existant, voir [metadonnees/](metadonnees/README.md) :
 
 - **Les règles d'un formulaire** (skip logic, obligatoire, limites) sont déjà dans l'onglet du formulaire : elles deviennent des tests automatiquement.
-- **Un autre test sur une question** (calcul, vraisemblance, bouton) : colonnes **Test - If I do...** / **Test - I should see...** à la fin de l'onglet.
-- **Un test qui dépasse une question** (parcours patient, plusieurs formulaires, droits d'accès, rapports) : onglet **Test Scenarios**.
+- **Un autre test sur une question** (calcul, vraisemblance, bouton) : dans la colonne **Comments** de l'onglet, `Test: <ce que je fais> -> <ce que je dois voir>`.
+- **Un test qui dépasse une question** (parcours patient, plusieurs formulaires, droits d'accès, rapports) : onglet existant **User flow template** (Action = ce que je fais, Description = ce que je dois voir).
 
 ## Bien écrire un test
 

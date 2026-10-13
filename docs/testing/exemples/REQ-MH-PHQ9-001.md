@@ -2,7 +2,7 @@
 
 ## Ce que l'équipe MSF écrit dans le classeur de métadonnées
 
-Les lignes de calcul vont dans les colonnes « Test - If I do... / Test - I should see... » de l'onglet F35, les autres dans l'onglet « Test Scenarios ».
+Les tests du score vont dans la colonne « Comments » de la ligne « PHQ-9 score » de l'onglet F35 (`Test: ... -> ...`), les autres dans l'onglet « User flow template ».
 
 | Quoi ? | Pour qui ? | Si je fais... | Je dois voir... |
 |---|---|---|---|

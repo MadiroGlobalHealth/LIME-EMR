@@ -21,7 +21,7 @@ Push every check down to the lowest level that can prove it. Most form logic (sc
 
 ## 2. Writing test cases
 
-- **Everything starts from the MSF metadata workbook**, which MSF already maintains (no new spreadsheet): `scripts/metadata-check.py` turns each rule in a form tab (Skip logic, Mandatory, limits) into test cases and checks them against the form JSON. MSF can add tests in two optional columns at the end of a form tab and in a `Test Scenarios` tab; results go into their existing `Form QA Tracker`. See [metadonnees/](metadonnees/README.md).
+- **Everything starts from the MSF metadata workbook**, which MSF already maintains (no new spreadsheet): `scripts/metadata-check.py` turns each rule in a form tab (Skip logic, Mandatory, limits) into test cases and checks them against the form JSON. MSF can add tests in existing places only: `Test: ... -> ...` lines in a form tab's Comments column, and steps in the existing `User flow template` tab; results go into their existing `Form QA Tracker`. See [metadonnees/](metadonnees/README.md).
 - Detailed test case files for the team: `docs/testing/cas-de-test/<REQ-ID>.md`, see the [PHQ-9 example](exemples/REQ-MH-PHQ9-001.md).
 
 IDs: `REQ-<MODULE>-<SUBJECT>-<NNN>` for requirements, `TC-<MODULE>-<SUBJECT>-<NNN>` for test cases.

@@ -1,6 +1,6 @@
 # Tests dans le classeur de métadonnées MSF
 
-Pas de nouveau fichier : les tests vivent dans le classeur de métadonnées que MSF maintient déjà. Le modèle [Template - Tests in metadata workbook.xlsx](Template%20-%20Tests%20in%20metadata%20workbook.xlsx) est un extrait de ce classeur (onglet F17) montrant les seuls ajouts proposés, en bleu.
+Pas de nouveau fichier, pas de nouvel onglet, pas de nouvelle colonne : les tests vivent dans le classeur de métadonnées que MSF maintient déjà, aux endroits existants. Le modèle [Template - Tests in metadata workbook.xlsx](Template%20-%20Tests%20in%20metadata%20workbook.xlsx) est un extrait de ce classeur (onglets F17, User flow template, Form QA Tracker, Form Guidance) avec des exemples en bleu.
 
 ## 1. Ce qui est automatique (rien à remplir)
 
@@ -13,12 +13,12 @@ Chaque règle déjà écrite dans un onglet de formulaire devient un ou deux cas
 | Lower limit / Upper limit | Une valeur hors limite est refusée |
 | Mandatory = Yes | L'enregistrement sans réponse est refusé |
 
-## 2. Ce que MSF peut ajouter (facultatif)
+## 2. Ce que MSF peut ajouter (facultatif), dans l'existant
 
-| Où | Quoi | Quand |
+| Où (existant) | Comment | Pour quoi |
 |---|---|---|
-| Onglet du formulaire, 2 colonnes à la fin : **Test - If I do...** / **Test - I should see...** | Un test sur la question de la ligne | Calculs, vraisemblance (« 450 kg → alerte »), boutons. Pas besoin de répéter la skip logic. |
-| Nouvel onglet **Test Scenarios** : Form, Who (role, site), If I do..., I should see..., Priority, Status, Comments | Un test par ligne | Parcours patient, plusieurs formulaires, rôles et accès, rapports |
+| Onglet du formulaire, colonne **Comments** | Une ligne par test : `Test: Enter 450 -> A warning: the weight is not plausible` | Un test sur la question de la ligne : calcul, vraisemblance, bouton. Pas besoin de répéter la skip logic. |
+| Onglet **User flow template** (Step, Action, Description, Data, User, Permission, Comment) | Une étape par ligne. Step = code du formulaire + n° (`F17-1`, `F17-2`), Action = ce que je fais, Description = ce que je dois voir, User = rôle et site | Parcours patient, plusieurs formulaires, rôles et accès (`ROLES-1`), rapports |
 
 Une ligne ajoutée à l'onglet **Form Guidance** explique la règle, avec un bon et un mauvais exemple, comme pour la skip logic.
 
@@ -116,3 +116,4 @@ Valeurs à reporter dans l'onglet « Form QA Tracker » (colonnes Structure et S
 | F74-Cervical Cancer | Auto, Oct 13: ✅ 10/10, 4 à vérifier | Auto, Oct 13: ❌ 93/101, 8 écart(s), 1 à vérifier |  |
 | F75-Wound Dressing | Auto, Oct 13: ✅ 2/2, 1 à vérifier | Auto, Oct 13: ❌ 10/12, 2 écart(s) |  |
 | F76-Radiology Request |  | Auto, Oct 13: ✅ 12/12 |  |
+
