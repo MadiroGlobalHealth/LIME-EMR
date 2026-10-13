@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMatrix } from "@/lib/store";
-import { getPath, clone, same } from "@/lib/profile";
+import { getPath, same } from "@/lib/profile";
 import { REG_ROWS, regValue, type FormRow, type Program } from "@/lib/model";
 import type { Need, SiteStatus } from "@/lib/types";
 import { Popover, PopoverAnchor, PopoverContent } from "./ui/popover";
@@ -88,13 +88,9 @@ function Denied({ onSignIn }: { onSignIn: () => void }) {
 function applyNeed(store: ReturnType<typeof useMatrix>, req: EditRequest, need: Need | null) {
   if (req.program) {
     const changes: Record<string, unknown> = {};
-    for (const f of req.program.forms) if (!f.custom) changes[`needs.forms.${f.code}`] = need;
+    for (const f of req.program.forms) if (!f.custom) changes[`forms.${f.code}.need`] = need;
     store.setMany(req.site, changes);
-  } else if (req.path === "custom_forms") {
-    const site = store.view.sites.find((s) => s.id === req.site)!;
-    const list = clone(site.custom_forms || []).map((c) => (c.code === req.form?.code ? { ...c, need: need || "needed" } : c));
-    store.set(req.site, "custom_forms", list);
-  } else if (req.path) store.set(req.site, req.path, need);
+  } else if (req.path) store.set(req.site, req.path, req.form?.custom ? need || "needed" : need);
 }
 
 function TextEditor({ req, onDone }: { req: EditRequest; onDone: () => void }) {

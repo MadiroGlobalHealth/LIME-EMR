@@ -1,6 +1,6 @@
 // Turns profiles (repo facts in `detected` + decisions) into what the matrix shows.
 import { applyChanges, clone, expandCodes } from "./profile";
-import type { CellState, Library, LibraryForm, Need, Pending, Profile, SiteStatus } from "./types";
+import type { CellState, Identifier, Library, LibraryForm, Need, Pending, Profile, SiteStatus, VocabItem } from "./types";
 
 export interface Cell {
   st: CellState;
@@ -28,22 +28,32 @@ export const STATUS_ORDER: Record<string, number> = { live: 0, preparation: 1, p
 export const LABEL: Record<CellState, string> = { on: "On", todo: "Needed", hold: "Hold", remove: "Remove?", no: "–", unk: "·", template: "Template" };
 export const NEED_TEXT: Record<Need, string> = { needed: "Needed", not_needed: "Not needed", on_hold: "On hold" };
 
-export const MILESTONES: [string, string, string][] = [
-  ["requirements", "Requirements complete", "Activities, forms and metadata signed off"],
-  ["uat", "UAT ready", "Test server available to users"],
-  ["prod", "Production target", "Planned go-live"],
-  ["live", "Live since", "Actual go-live"],
-  ["handover", "Handover / closure", "Handover or decommission"],
-];
+/** [id, label, hint] from `vocab.milestones` in sites.yaml (set by the store when the file loads). */
+export const MILESTONES: [string, string, string][] = [];
+export function setMilestones(list: VocabItem[]) {
+  MILESTONES.splice(0, MILESTONES.length, ...list.map((v) => [v.id, v.label, v.hint || ""] as [string, string, string]));
+}
 // [key, label, hint, editor, profile path]
 export const REG_ROWS: [string, string, string, "text" | "list", string][] = [
   ["id_prefix", "MSF ID prefix", "idgen generator", "text", "registration.id_prefix"],
-  ["other_ids", "Other identifiers", "Shown at registration", "list", "registration.other_ids"],
+  ["identifiers", "Other identifiers", "Shown at registration", "list", "registration.identifiers"],
   ["extra_fields", "Extra fields", "Beyond name, sex, birth date", "list", "registration.extra_fields"],
   ["address", "Address hierarchy", "Levels, top down", "list", "registration.address"],
   ["languages", "Languages", "UI locales", "list", "registration.languages"],
   ["locations", "Locations", "Login and visit locations", "list", "locations"],
 ];
+
+/** "Patient ID (required, 5 digits)" */
+export function identifierText(i: Identifier) {
+  const bits = [i.required ? "required" : "optional", i.format].filter(Boolean);
+  return `${i.name} (${bits.join(", ")})`;
+}
+/** A registration value as one line of text. */
+export function regText(key: string, v: unknown) {
+  if (!Array.isArray(v)) return v == null ? "" : String(v);
+  if (key === "identifiers") return (v as Identifier[]).map(identifierText).join(", ");
+  return v.join(key === "address" ? " › " : ", ");
+}
 
 export function cellState(need: Need | null | undefined, built: boolean, inRepo: boolean): Cell {
   if (built) {
@@ -61,7 +71,7 @@ const empty = (): Counts => ({ on: 0, todo: 0, hold: 0, remove: 0 });
 
 function derive(s: Profile, rows: FormRow[], lib: Library): SiteView {
   const det = s.detected || {};
-  const needs = s.needs || {};
+  const decisions = s.forms || {};
   const inRepo = !!s.detected;
   const built = new Set(expandCodes(det.forms));
   const integ = det.integration || null;
@@ -70,9 +80,7 @@ function derive(s: Profile, rows: FormRow[], lib: Library): SiteView {
     for (const c of expandCodes(integ.staging_forms)) sync[c] = "staging";
     for (const c of expandCodes(integ.synced_forms)) sync[c] = "live";
   }
-  const fNeeds = needs.forms || {};
-  const notes = s.form_notes || {};
-  const customs = Object.fromEntries((s.custom_forms || []).map((c) => [c.code, c]));
+
   const formCells: Record<string, Cell> = {};
   const forms = empty();
   let fromLib = 0, fresh = 0;
@@ -81,10 +89,10 @@ function derive(s: Profile, rows: FormRow[], lib: Library): SiteView {
     const isBuilt = built.has(r.code);
     if (r.custom) {
       if (r.ownerId !== s.id) { formCells[r.code] = { st: "unk", title: "Site-specific form of " + r.owner }; continue; }
-      need = customs[r.code]?.need || "needed";
-    } else need = fNeeds[r.code] || (isBuilt ? null : needs.forms_default);
+      need = decisions[r.code]?.need || "needed";
+    } else need = decisions[r.code]?.need || (isBuilt ? null : s.forms_default);
     const x = cellState(need, isBuilt, inRepo);
-    const note = notes[r.code] || (r.custom ? customs[r.code]?.note : null) || null;
+    const note = decisions[r.code]?.note || null;
     formCells[r.code] = { st: x.st, title: x.title + (note ? ". " + note : ""), sync: sync[r.code] || null, note };
     if (x.st in forms) forms[x.st as keyof Counts]++;
     if (x.st === "on" || x.st === "todo") (r.in_library !== false ? fromLib++ : fresh++);
@@ -92,7 +100,7 @@ function derive(s: Profile, rows: FormRow[], lib: Library): SiteView {
   if (s.registration?.custom_form) fresh++;
 
   const mBuilt = new Set(det.modules || []);
-  const mNeeds = needs.modules || {};
+  const mNeeds = s.modules || {};
   const moduleCells: Record<string, Cell> = {};
   const modules = empty();
   for (const m of lib.modules) {
@@ -101,7 +109,7 @@ function derive(s: Profile, rows: FormRow[], lib: Library): SiteView {
     if (x.st in modules) modules[x.st as keyof Counts]++;
   }
 
-  const need = s.integration?.need;
+  const need = s.integrations?.dhis2?.need;
   let integrationCell: SiteView["integrationCell"];
   if (integ?.status === "live") {
     integrationCell = need === "not_needed"
@@ -137,7 +145,7 @@ export function buildView(base: Record<string, Profile>, pending: Pending, lib: 
   effective.sort((a, b) => rank(a) - rank(b) || String(a.name || a.id).localeCompare(String(b.name || b.id)));
 
   const rows: FormRow[] = lib.forms.map((f) => ({ ...f, in_library: f.in_library !== false }));
-  for (const s of effective) for (const cf of s.custom_forms || []) rows.push({ code: cf.code, name: cf.name, program: cf.program || "Other", custom: true, owner: s.name || s.id, ownerId: s.id, in_library: false });
+  for (const s of effective) for (const [code, d] of Object.entries(s.forms || {})) if (d.custom) rows.push({ code, name: d.name || code, program: d.program || "Other", custom: true, owner: s.name || s.id, ownerId: s.id, in_library: false });
   const byProg = new Map<string, FormRow[]>();
   for (const r of rows) byProg.set(r.program, [...(byProg.get(r.program) || []), r]);
   const last = (p: string) => (p === "Unassigned" ? 2 : p === "Other" ? 1 : 0);
@@ -196,7 +204,7 @@ export function nextMilestone(s: Profile) {
 
 export function show(v: unknown): string {
   if (v == null || v === "") return "not set";
-  if (Array.isArray(v)) return v.length ? (typeof v[0] === "object" ? `${v.length} item(s)` : v.join(", ")) : "empty";
+  if (Array.isArray(v)) return v.length ? (typeof v[0] === "object" ? v.map((x) => (x as { name?: string })?.name || "item").join(", ") : v.join(", ")) : "empty";
   if (typeof v === "object") {
     const m = v as { date?: string; done?: boolean; note?: string };
     return [m.date, m.done ? "done" : "", m.note].filter(Boolean).join(", ") || "not set";
@@ -207,14 +215,16 @@ export function show(v: unknown): string {
 
 export function pathLabel(path: string, lib: Library): string {
   let m: RegExpExecArray | null;
-  if ((m = /^needs\.forms\.(F\d+)$/.exec(path))) return `${m[1]} ${lib.forms.find((f) => f.code === m![1])?.name || ""}`.trim();
-  if ((m = /^needs\.modules\.(.+)$/.exec(path))) return "Module " + (lib.modules.find((x) => x.id === m![1])?.name || m[1]);
+  if ((m = /^forms\.([^.]+)(?:\.(need|note))?$/.exec(path))) return `${m[1]} ${lib.forms.find((f) => f.code === m![1])?.name || ""}`.trim() + (m[2] === "note" ? " note" : "");
+  if ((m = /^modules\.(.+)$/.exec(path))) return "Module " + (lib.modules.find((x) => x.id === m![1])?.name || m[1]);
+  if ((m = /^integrations\.(\w+)\.(need|target|note)$/.exec(path))) return `${m[1] === "dhis2" ? "DHIS2" : m[1]} ${m[2] === "need" ? "integration" : m[2]}`;
   if ((m = /^milestones\.(\w+)$/.exec(path))) return MILESTONES.find((x) => x[0] === m![1])?.[1] || m[1];
   const reg = REG_ROWS.find((r) => r[4] === path);
   if (reg) return reg[1];
   const named: Record<string, string> = {
     status: "Status", phase: "Phase", name: "Site name", country: "Country", open_items: "Open items", notes: "Notes",
-    "integration.need": "DHIS2 integration", "integration.dhis2_target": "DHIS2 target", custom_forms: "Site-specific forms",
+    forms_default: "Forms not listed", org: "Organisation", focal_point: "Focal point", reviewed: "Last reviewed",
+    "environments.uat": "UAT server", "environments.prod": "Production server",
   };
   return named[path] || path;
 }

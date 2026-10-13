@@ -46,7 +46,7 @@ await ctx.route(/api\.github\.com/, async (r) => {
   if (req.method() === "PUT") {
     if (auth !== "Bearer good") return json({ message: "Bad credentials" }, 401);
     const body = JSON.parse(req.postData());
-    if (race) { race = false; store[p] = store[p].replace("country: Syria", "country: Syria (Homs)"); }
+    if (race) { race = false; store[p] = store[p].replace("    name: Homs\n", "    name: Homs (raced)\n"); }
     if (store[p] !== undefined && body.sha !== sha(store[p])) return json({ message: "sha mismatch" }, 409);
     store[p] = Buffer.from(body.content, "base64").toString("utf8");
     const c = { sha: sha(store[p] + commits.length), path: p, message: body.message, branch: body.branch };
@@ -116,16 +116,16 @@ await page.getByLabel("Commit note").fill("Agreed in the weekly LIME call");
 await page.getByRole("button", { name: "Save changes" }).click();
 await page.getByText(/Saved to /).first().waitFor({ timeout: 8000 });
 check(commits.length === 1 && /^site-matrix\((bunia,mombasa|mombasa,bunia)\): /.test(commits[0].message), `1 commit naming both sites, after a refused write: ${commits.map((c) => c.message.split("\n")[0]).join(" | ")}`);
-check(store[FILE].includes("country: Syria (Homs)"), "a change saved meanwhile by someone else is kept");
+check(store[FILE].includes("name: Homs (raced)"), "a change saved meanwhile by someone else is kept");
 // Lines added and removed, counting duplicates.
 const diff = (p) => {
   const count = (lines) => lines.reduce((m, l) => m.set(l, (m.get(l) || 0) + 1), new Map());
   const a = count(original[p].split("\n")), b = count(store[p].split("\n"));
   const more = (x, y) => [...x].flatMap(([l, n]) => Array(Math.max(0, n - (y.get(l) || 0))).fill(l));
-  return { add: more(b, a).filter((l) => !l.includes("Syria")), del: more(a, b).filter((l) => !l.includes("Syria")) };
+  return { add: more(b, a).filter((l) => !l.includes("Homs")), del: more(a, b).filter((l) => !l.includes("Homs")) };
 };
 const m = diff(FILE);
-check(JSON.stringify(m.del) === JSON.stringify(["    status: preparation", "      id_prefix: null"]) && ["    status: live", "      id_prefix: KE-MBA-", "        date: '2026-12-01'", "        F35: needed"].every((l) => m.add.includes(l)) && m.add.length <= 7,
+check(JSON.stringify(m.del) === JSON.stringify(["    status: preparation", "      id_prefix: null"]) && ["    status: live", "      id_prefix: KE-MBA-", "        date: '2026-12-01'", "      F35: needed"].every((l) => m.add.includes(l)) && m.add.length <= 7,
   `sites.yaml diff only touches changed lines: +${JSON.stringify(m.add)} -${JSON.stringify(m.del)}`);
 check(commits.every((c) => c.message.includes("Agreed in the weekly LIME call")), "commit note is in each commit message");
 

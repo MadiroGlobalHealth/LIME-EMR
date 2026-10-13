@@ -139,17 +139,16 @@ def registration(site_dir):
         cfg = json.load(open(fe[0], encoding="utf-8"))
         regcfg = cfg.get("@openmrs/esm-patient-registration-app", {})
         labels = '"showPrintIdentifierStickerButton": true' in open(fe[0], encoding="utf-8").read()
-    others = []
+    identifiers = []
     for uuid in regcfg.get("defaultPatientIdentifierTypes", []):
         if uuid == MSF_ID_TYPE or uuid not in types:
             continue
         t = types[uuid]
-        txt = t.get("Name", "").strip()
-        bits = ["required" if str(t.get("Required", "")).upper() == "TRUE" else "optional"]
+        ident = {"name": t.get("Name", "").strip(), "required": str(t.get("Required", "")).upper() == "TRUE"}
         if (t.get("Format description") or "").strip():
-            bits.append(t["Format description"].strip())
-        others.append("%s (%s)" % (txt, ", ".join(bits)))
-    reg["other_ids"] = others
+            ident["format"] = t["Format description"].strip()
+        identifiers.append(ident)
+    reg["identifiers"] = identifiers
 
     fields, emergency = [], 0
     for sec in regcfg.get("sectionDefinitions", []):
@@ -296,7 +295,8 @@ def main(argv):
         }
         created = sid not in doc["sites"]
         if created:
-            doc["sites"][sid] = {"name": sid.capitalize(), "country": None, "status": "live", "phase": None}
+            org = next(iter(doc.get("orgs") or {}), None)
+            doc["sites"][sid] = {"name": sid.capitalize(), "org": org, "country": None, "status": "live", "phase": None}
         # Keep the old block (and its timestamps) when nothing changed, so a refresh only
         # touches the sites whose setup changed.
         old = doc["sites"][sid].get("detected") or {}

@@ -1,5 +1,6 @@
 import { Download, FileText, Github, Moon, MapPin, RefreshCw, Rows3, Sun } from "lucide-react";
 import { useMatrix } from "@/lib/store";
+import { countryName } from "@/lib/countries";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./ui/command";
 import { exportCsv } from "./toolbar";
 
@@ -16,8 +17,8 @@ export function CommandMenu({ open, onOpenChange, onSite, onForm, onSignIn, dark
         <CommandEmpty>Nothing found.</CommandEmpty>
         <CommandGroup heading="Sites">
           {view.sites.map((s) => (
-            <CommandItem key={s.id} value={`site ${s.name} ${s.country} ${s.status}`} onSelect={run(() => onSite(s.id))}>
-              <MapPin /> {s.name} <span className="ml-auto text-xs text-muted-foreground">{s.country} · {s.status}</span>
+            <CommandItem key={s.id} value={`site ${s.name} ${countryName(s.country)} ${s.status}`} onSelect={run(() => onSite(s.id))}>
+              <MapPin /> {s.name} <span className="ml-auto text-xs text-muted-foreground">{countryName(s.country)} · {s.status}</span>
             </CommandItem>
           ))}
         </CommandGroup>

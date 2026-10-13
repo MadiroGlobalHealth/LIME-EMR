@@ -8,6 +8,7 @@ import { Matrix } from "@/components/matrix";
 import { CellEditor, type EditRequest } from "@/components/cell-editor";
 import { SaveBar } from "@/components/save-bar";
 import { SitesHome } from "@/components/sites-home";
+import { CountrySelect, OrgSelect } from "@/components/pickers";
 import { SitePage } from "@/components/site-page";
 import { useRoute } from "@/lib/route";
 import { cn } from "@/lib/utils";
@@ -138,20 +139,24 @@ function DataSource() {
 }
 
 function AddSiteDialog({ open, onOpenChange, onAdded }: { open: boolean; onOpenChange: (o: boolean) => void; onAdded: (id: string) => void }) {
-  const { addSite } = useMatrix();
+  const { addSite, orgs } = useMatrix();
   const [name, setName] = React.useState("");
-  const [country, setCountry] = React.useState("");
+  const [country, setCountry] = React.useState<string | null>(null);
+  const [org, setOrg] = React.useState("");
   const [error, setError] = React.useState("");
+  const orgId = org || Object.keys(orgs)[0] || "";
+  const reset = () => { setName(""); setCountry(null); setOrg(""); setError(""); };
   return (
-    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setName(""); setCountry(""); setError(""); } }}>
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a site</DialogTitle>
           <DialogDescription>It starts as Planned. Fill in its details on the next page, then save.</DialogDescription>
         </DialogHeader>
-        <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); try { const id = addSite(name.trim(), country.trim()); onOpenChange(false); setName(""); setCountry(""); onAdded(id); } catch (err) { setError((err as Error).message); } }}>
+        <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); try { const id = addSite(name.trim(), country, orgId); onOpenChange(false); reset(); onAdded(id); } catch (err) { setError((err as Error).message); } }}>
           <div className="grid gap-1.5"><Label htmlFor="new-name">Site name</Label><Input id="new-name" autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mombasa" /></div>
-          <div className="grid gap-1.5"><Label htmlFor="new-country">Country</Label><Input id="new-country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Kenya" /></div>
+          <div className="grid gap-1.5"><Label htmlFor="new-country">Country</Label><CountrySelect id="new-country" value={country} onChange={setCountry} /></div>
+          {Object.keys(orgs).length > 1 && <div className="grid gap-1.5"><Label htmlFor="new-org">Organisation</Label><OrgSelect id="new-org" value={orgId} onChange={setOrg} /></div>}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-fit">Add site</Button>
         </form>

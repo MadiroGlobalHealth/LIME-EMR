@@ -4,13 +4,14 @@ import snapshotJson from "@/snapshot.json";
 import { createGitHub, explain, GitHubError } from "./github";
 import { clearSession, loadSession, saveSession, takeSessionFromUrl, type Session } from "./auth";
 import { applyPending, clone, getPath, parseDoc, renderDoc, same, slugify, type SitesDoc } from "./profile";
-import { buildView, commitMessage, type MatrixView } from "./model";
-import type { Library, Pending, Profile, RepoConfig, SiteChanges, Snapshot } from "./types";
+import { buildView, commitMessage, setMilestones, type MatrixView } from "./model";
+import type { Library, Orgs, Pending, Profile, RepoConfig, SiteChanges, Snapshot, Vocab } from "./types";
 
 const MAX_TRIES = 3;
 
 const snapshot = snapshotJson as unknown as Snapshot;
 const initial = parseDoc(snapshot.text);
+setMilestones(initial.vocab.milestones);
 
 function repoConfig(): RepoConfig {
   const q = new URLSearchParams(location.search);
@@ -39,6 +40,8 @@ function useMatrixState() {
   const [lib, setLib] = React.useState<Library>(initial.library);
   const [base, setBase] = React.useState<Record<string, Profile>>(initial.sites);
   const [fileText, setFileText] = React.useState(snapshot.text);
+  const [vocab, setVocab] = React.useState<Vocab>(initial.vocab);
+  const [orgs, setOrgs] = React.useState<Orgs>(initial.orgs);
   const [pending, setPending] = useStored<Pending>(`sm-draft:${cfg.owner}/${cfg.repo}@${cfg.branch}`, {});
   const [source, setSource] = React.useState<Source>("loading");
   const [loadError, setLoadError] = React.useState<string | null>(null);
@@ -58,6 +61,9 @@ function useMatrixState() {
     const p = parseDoc(text);
     setBase(p.sites);
     if (p.library.forms.length) setLib(p.library);
+    setMilestones(p.vocab.milestones);
+    setVocab(p.vocab);
+    setOrgs(p.orgs);
     setFileText(text);
   }, []);
 
@@ -141,10 +147,10 @@ function useMatrixState() {
   const discardSite = React.useCallback((site: string) => setPending((all) => { const o = { ...all }; delete o[site]; return o; }), [setPending]);
   const discardAll = React.useCallback(() => { setPending({}); setSaveError(null); }, [setPending]);
 
-  const addSite = React.useCallback((name: string, country: string) => {
+  const addSite = React.useCallback((name: string, country: string | null, org: string) => {
     const id = slugify(name);
     if (!id || base[id] || pending[id]) throw new Error("A site with that name already exists.");
-    setPending((all) => ({ ...all, [id]: { __new: { id, name, country: country || null, status: "planned", phase: "Feasibility & budgeting" } } }));
+    setPending((all) => ({ ...all, [id]: { __new: { id, name, org, country: country || null, status: "planned", phase: "Feasibility & budgeting" } } }));
     return id;
   }, [base, pending, setPending]);
 
@@ -194,7 +200,7 @@ function useMatrixState() {
   }, [canEdit, saving, pending, gh, cfg, lib, commitNote, view.sites, adopt, setPending]);
 
   return {
-    cfg, snapshot, lib, base, fileText, pending, view, source, loadError, session, user, canEdit, saving, saveError, commitNote,
+    cfg, snapshot, lib, vocab, orgs, base, fileText, pending, view, source, loadError, session, user, canEdit, saving, saveError, commitNote,
     setCommitNote, load, signInWithToken, signOut, set, setMany, undo, discardSite, discardAll, addSite, saveAll, gh,
   };
 }

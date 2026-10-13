@@ -5,30 +5,57 @@
 # made it, and by scripts/site-profiles/extract.py, which refreshes each site's `detected` block.
 #
 # Under `sites`, one entry per site, keyed by its id (the folder name under sites/ once it exists):
-#   - everything above `detected` is decided by people: status, dates, patient ID and registration,
-#     needed forms and modules (`needs`), DHIS2 reporting, notes;
+#   - everything above `detected` is decided by people: organisation, status, dates, patient ID and
+#     registration, forms and modules needed, integrations (DHIS2...), notes;
 #   - `detected` is what the repo configures today. It is generated: do not edit it by hand.
 # Work still to do for a site = what its decisions ask for that `detected` does not show yet.
+# `orgs` lists the organisations running sites; `vocab` the milestones and integrations to track.
 # `how_to_apply` says where each item is configured in the repo. `catalog` lists the shared forms
 # (distro ampathforms) with their program, and the key modules with their frontend apps.
-version: 1
+# Allowed values: sites.schema.json. Keys starting with x- are free extensions.
+version: 2
+orgs:
+  msf-ocg:
+    name: MSF OCG
+vocab:
+  milestones:
+    - id: requirements
+      label: Requirements complete
+      hint: Activities, forms and metadata signed off
+    - id: uat
+      label: UAT ready
+      hint: Test server available to users
+    - id: prod
+      label: Production target
+      hint: Planned go-live
+    - id: live
+      label: Live since
+      hint: Actual go-live
+    - id: handover
+      label: Handover / closure
+      hint: Handover or decommission
+  integrations:
+    - id: dhis2
+      label: DHIS2 reporting
+      hint: Data the EMR sends to DHIS2 through OpenFn
 how_to_apply:
   new_site: Create sites/<id> by copying the closest existing site folder, rename its files and artifactId, and add <module>sites/<id></module> to the root pom.xml. Then run scripts/site-profiles/extract.py so `detected` is filled.
-  forms: Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there.
-  custom_forms: 'Site-specific forms are not in the library yet: build the form JSON, add it to the distro ampathforms folder with the next free F-code, add it to `catalog.forms`, then include it in the site''s pom.xml.'
+  forms: 'Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.'
+  custom_forms: 'Site-specific forms are entries of `forms` with custom: true: build the form JSON, add it to the distro ampathforms folder with the next free F-code, add it to `catalog.forms`, replace the site-specific key with that code (dropping custom), then include it in the site''s pom.xml.'
   modules: Frontend modules come from distro/configs/openmrs/frontend_assembly/spa-assemble-config.json. A site turns one off by listing its app (see `catalog.modules[].apps`) in the modulesToRemove property of sites/<site>/pom.xml.
   registration.id_prefix: Prefix column of the MSF ID generator in sites/<site>/configs/openmrs/initializer_config/idgen/*.csv.
-  registration.other_ids: defaultPatientIdentifierTypes of @openmrs/esm-patient-registration-app in sites/<site>/configs/openmrs/frontend_config/*.json; the types are defined in sites/<site>/configs/openmrs/initializer_config/patientidentifiertypes/*.csv (or the distro).
+  registration.identifiers: defaultPatientIdentifierTypes of @openmrs/esm-patient-registration-app in sites/<site>/configs/openmrs/frontend_config/*.json; the types are defined in sites/<site>/configs/openmrs/initializer_config/patientidentifiertypes/*.csv (or the distro).
   registration.extra_fields: sectionDefinitions of @openmrs/esm-patient-registration-app in sites/<site>/configs/openmrs/frontend_config/*.json; person attributes in sites/<site>/configs/openmrs/initializer_config/personattributetypes/*.csv.
   registration.address: layout.address.format global property (sites/<site>/configs/openmrs/initializer_config/globalproperties/address-template.xml) and the hierarchy in sites/<site>/configs/openmrs/initializer_config/addresshierarchy.
   registration.languages: locale.allowed.list and default_locale global properties in sites/<site>/configs/openmrs/initializer_config/globalproperties/*.xml.
   locations: sites/<site>/configs/openmrs/initializer_config/locations/*.csv.
-  integration: 'DHIS2 reporting runs in OpenFn: sites/<site>/configs/openfn/<project>.yaml (workflow triggers must be enabled), with changelog.md listing the version and the forms mapped. staging_project.yaml holds forms being tested.'
-  milestones_and_notes: Status, milestones, phase, open_items and notes only live in this file; nothing to change in the repo.
+  integrations.dhis2: 'DHIS2 reporting runs in OpenFn: sites/<site>/configs/openfn/<project>.yaml (workflow triggers must be enabled), with changelog.md listing the version and the forms mapped. staging_project.yaml holds forms being tested.'
+  milestones_and_notes: org, status, phase, focal_point, reviewed, environments, milestones, open_items and notes only live in this file; nothing to change in the repo.
 sites:
   bunia:
     name: Bunia
-    country: DR Congo
+    org: msf-ocg
+    country: CD
     status: live
     phase: Live
     milestones:
@@ -36,8 +63,9 @@ sites:
         date: null
         done: true
         note: Go-live date to confirm
-    integration:
-      dhis2_target: null
+    integrations:
+      dhis2:
+        target: null
     open_items: []
     notes: Surgical project. Ward and bed management enabled (LIME2-1147).
     detected:
@@ -71,8 +99,6 @@ sites:
         id_prefix: CD511-
         id_example: CD511-1024
         id_charset: '0123456789'
-        other_ids:
-          - DHIS2 ID (optional)
         extra_fields:
           - Name 2
           - Name 3
@@ -95,6 +121,9 @@ sites:
         languages:
           - en
           - fr
+        identifiers:
+          - name: DHIS2 ID
+            required: false
       locations:
         - Bunia
         - Surgical Ward
@@ -118,7 +147,8 @@ sites:
         synced_forms: []
   matsapha:
     name: Matsapha
-    country: Eswatini
+    org: msf-ocg
+    country: SZ
     status: live
     phase: Hypercare, moving to BAU
     milestones:
@@ -127,8 +157,9 @@ sites:
         done: true
         approx: true
         note: Deployed in Sprint 43 release (5 Feb 2026)
-    integration:
-      dhis2_target: null
+    integrations:
+      dhis2:
+        target: null
     open_items:
       - 'Users: confirm whether the admin account is still in use'
       - 'User creation troubleshooting: share with Pius'
@@ -165,8 +196,6 @@ sites:
         id_prefix: SZ-
         id_example: SZ-1024
         id_charset: '0123456789'
-        other_ids:
-          - Patient ID (required, Patient ID must be exactly 5 digits (e.g. 12345))
         extra_fields:
           - Gender identity
           - Marital status
@@ -188,6 +217,10 @@ sites:
         default_language: en
         languages:
           - en
+        identifiers:
+          - name: Patient ID
+            required: true
+            format: Patient ID must be exactly 5 digits (e.g. 12345)
       locations:
         - Manzini Clinic
       integration:
@@ -209,7 +242,8 @@ sites:
         synced_forms: []
   mosul:
     name: Mosul
-    country: Iraq
+    org: msf-ocg
+    country: IQ
     status: live
     phase: Live, handover preparation
     milestones:
@@ -219,15 +253,17 @@ sites:
       handover:
         date: '2026-10-31'
         note: Handover target end of October
-    custom_forms:
-      - code: MOS-DC
+    forms:
+      MOS-DC:
+        custom: true
         name: MH Discharge form
         program: Mental Health
         need: needed
         note: MH field team to check what is needed
-    integration:
-      dhis2_target: Mental Health tracker program (PII attributes removed before sync)
-      note: Staging project msf-lime-mosul-staging extends sync to the other hospital programs (WF3).
+    integrations:
+      dhis2:
+        target: Mental Health tracker program (PII attributes removed before sync)
+        note: Staging project msf-lime-mosul-staging extends sync to the other hospital programs (WF3).
     open_items:
       - 'Discharge form: MH field team to check what is needed'
       - 'Handover: clarify DB management (store DB dump, no live instance)'
@@ -259,8 +295,6 @@ sites:
         id_prefix: IQ146-
         id_example: IQ146-1024
         id_charset: '0123456789'
-        other_ids:
-          - 'Legacy MSF ID (optional, Format: two letters, two-digit year, dash, two-digit month, dash, four-digit number (e.g. ER26-06-1234))'
         extra_fields:
           - Current status
           - Legal status
@@ -282,6 +316,10 @@ sites:
         languages:
           - en
           - ar
+        identifiers:
+          - name: Legacy MSF ID
+            required: false
+            format: 'Format: two letters, two-digit year, dash, two-digit month, dash, four-digit number (e.g. ER26-06-1234)'
       locations:
         - Mental Health (MH) / الصحة النفسية
         - Registration Counter (REG) / تسجيل المستشفى
@@ -319,15 +357,18 @@ sites:
           - F29-F34
   ebola:
     name: Ebola response
-    country: Outbreak
+    org: msf-ocg
+    country: null
     status: preparation
     phase: Tablet setup
     milestones: {}
     open_items:
       - Finalize setup of 2 tablets
+    notes: 'Country: Outbreak (no fixed country).'
   mombasa:
     name: Mombasa
-    country: Kenya
+    org: msf-ocg
+    country: KE
     status: preparation
     phase: UAT server deployment
     milestones:
@@ -354,58 +395,64 @@ sites:
       - Health promotion
       - Laboratory
       - Dispensary
-    needs:
-      forms_default: not_needed
-      forms:
-        F11: needed
-        F12: needed
-        F29: needed
-        F30: needed
-        F31: needed
-        F32: needed
-        F33: needed
-        F34: needed
-        F40: needed
-        F51: needed
-        F52: needed
-        F53: needed
-        F54: needed
-        F55: needed
-        F56: needed
-        F57: needed
-        F58: needed
-        F59: needed
-        F60: needed
-        F91: on_hold
-        F92: on_hold
-        F35: not_needed
-        F44: not_needed
-        F73: not_needed
-      modules:
-        registration: needed
-        chart: needed
-        lab: needed
-        meds: needed
-        dispensing: needed
-        ocl: needed
-    form_notes:
-      F35: Not needed for the moment
-      F44: Merged with F73 into the new General consultation form
-      F73: Merged with F44 into the new General consultation form
-      F59: Likely not used, access given so the team can view content
-      F60: Likely not used, access given so the team can view content
-      F91: Not introduced until further discussions (security measures)
-      F92: Not introduced until further discussions (security measures)
-    custom_forms:
-      - code: MBA-GC
+    forms_default: not_needed
+    forms:
+      F11: needed
+      F12: needed
+      F29: needed
+      F30: needed
+      F31: needed
+      F32: needed
+      F33: needed
+      F34: needed
+      F40: needed
+      F51: needed
+      F52: needed
+      F53: needed
+      F54: needed
+      F55: needed
+      F56: needed
+      F57: needed
+      F58: needed
+      F59:
+        need: needed
+        note: Likely not used, access given so the team can view content
+      F60:
+        need: needed
+        note: Likely not used, access given so the team can view content
+      F91:
+        need: on_hold
+        note: Not introduced until further discussions (security measures)
+      F92:
+        need: on_hold
+        note: Not introduced until further discussions (security measures)
+      F35:
+        need: not_needed
+        note: Not needed for the moment
+      F44:
+        need: not_needed
+        note: Merged with F73 into the new General consultation form
+      F73:
+        need: not_needed
+        note: Merged with F44 into the new General consultation form
+      MBA-GC:
+        custom: true
         name: General consultation
         program: Outpatient
         need: needed
         note: Combines OPD General (F44) and Gynaecology (F73). Specs to finalize
-    integration:
-      dhis2_target: null
-      need: needed
-      note: DHIS2 needs to be confirmed with the project.
+    modules:
+      registration: needed
+      chart: needed
+      lab: needed
+      meds: needed
+      dispensing: needed
+      ocl: needed
+    integrations:
+      dhis2:
+        need: needed
+        target: null
+        note: DHIS2 needs to be confirmed with the project.
     open_items:
       - 'Profiles: clarify default profiles vs MSF-defined users'
       - 'General consultation form: finalize specs'
@@ -415,7 +462,8 @@ sites:
     notes: Requirements from 'LIME - Mombasa - Activities and forms'. One location needed.
   baghdad:
     name: Baghdad
-    country: Iraq
+    org: msf-ocg
+    country: IQ
     status: planned
     phase: Feasibility & budgeting
     milestones: {}
@@ -423,7 +471,8 @@ sites:
       - Feasibility assessment and budgeting
   homs:
     name: Homs
-    country: Syria
+    org: msf-ocg
+    country: SY
     status: planned
     phase: Feasibility & budgeting (urgent for PoA)
     milestones: {}
@@ -436,7 +485,8 @@ sites:
       - Feasibility analysis and budgeting, urgent for PoA
   south-tehran:
     name: South Tehran
-    country: Iran
+    org: msf-ocg
+    country: IR
     status: planned
     phase: Feasibility & budgeting (urgent for PoA)
     milestones: {}
@@ -446,7 +496,8 @@ sites:
       - New MedCo arriving
   vinnytsia:
     name: Vinnytsia
-    country: Ukraine
+    org: msf-ocg
+    country: UA
     status: planned
     phase: Feasibility & budgeting
     milestones: {}

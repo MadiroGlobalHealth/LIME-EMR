@@ -1,11 +1,13 @@
 import * as React from "react";
-import { ArrowLeft, Copy, ExternalLink, Github, Info, Search } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, Github, Info, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { useMatrix } from "@/lib/store";
 import { applyChanges, clone, dumpYaml, expandCodes, same, siteEntry } from "@/lib/profile";
 import { explain, type Commit } from "@/lib/github";
-import { fmtDate, MILESTONES, parseDate, REG_ROWS, regValue, type FormRow, type SiteView } from "@/lib/model";
-import type { Milestone, Need, Profile, SiteStatus } from "@/lib/types";
+import { fmtDate, MILESTONES, parseDate, REG_ROWS, regText, regValue, type FormRow, type SiteView } from "@/lib/model";
+import { countryName } from "@/lib/countries";
+import { CountrySelect, OrgSelect } from "./pickers";
+import type { Identifier, Milestone, Need, Profile, SiteStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -49,7 +51,7 @@ export function SitePage({ id, tab, onTab, onBack, onSignIn }: { id: string; tab
           <div className="grid gap-1.5">
             <StatusBadge status={s.status} />
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{s.name}</h1>
-            <p className="text-muted-foreground">{[s.country, s.phase].filter(Boolean).join(" · ")}</p>
+            <p className="text-muted-foreground">{[countryName(s.country), s.phase].filter(Boolean).join(" · ")}</p>
           </div>
           <div className="grid w-full max-w-xs gap-1.5 text-sm">
             <span className="text-muted-foreground"><NextStep s={s} /></span>
@@ -97,7 +99,7 @@ function Overview({ s }: { s: SiteView }) {
     <div className="grid items-start gap-5 lg:grid-cols-2">
       <DatesCard s={s} />
       <RegistrationCard s={s} />
-      <Dhis2Card s={s} />
+      <IntegrationCards s={s} />
       <NotesCard s={s} />
     </div>
   );
@@ -189,17 +191,24 @@ function RegistrationCard({ s }: { s: SiteView }) {
     <Section title="Patient ID and registration" description="What the registration screen asks for. Values from the site's current setup are filled in.">
       {REG_ROWS.map(([key, label, hint, kind, path]) => {
         const v = regValue(s, key);
-        const isAddress = key === "address";
-        const sep = isAddress ? " › " : ", ";
-        const text = (x: unknown) => (Array.isArray(x) ? x.join(sep) : x == null ? "" : String(x));
         const differs = v.plan != null && v.det != null && !same(v.plan, v.det) && !(Array.isArray(v.plan) && !v.plan.length);
+        const note = differs && <span className="text-hold">The site's setup still says {regText(key, v.det)}.</span>;
+        if (key === "identifiers") {
+          return (
+            <div key={key} className="grid gap-1.5">
+              <Label>{label}</Label>
+              <IdentifiersEditor value={(v.value as Identifier[] | null) || []} disabled={!canEdit} onChange={(list) => set(s.id, path, list.length ? list : null)} />
+              <p className="text-xs text-muted-foreground">Besides the MSF ID. {note}</p>
+            </div>
+          );
+        }
+        const isAddress = key === "address";
         const example = key === "id_prefix" && v.value === s.detected?.registration?.id_prefix ? s.detected?.registration?.id_example : null;
+        const help = key === "languages" ? "Language codes separated by commas, e.g. en, fr, ar. " : kind === "list" ? (isAddress ? "Levels from top to bottom, separated by ›. " : "Separate with commas. ") : (REG_HINT[key] || hint) + ". ";
         return (
           <Field key={key} id={`reg-${key}`} label={label}
-            hint={<>{kind === "list" ? (isAddress ? "Levels from top to bottom, separated by ›. " : "Separate with commas. ") : (REG_HINT[key] || hint) + ". "}
-              {example && <>Example: <span className="font-mono">{example}</span>. </>}
-              {differs && <span className="text-hold">The site's setup still says {text(v.det)}.</span>}</>}>
-            <BlurInput id={`reg-${key}`} value={text(v.value)} disabled={!canEdit} placeholder="Not set" className={key === "id_prefix" ? "font-mono" : ""}
+            hint={<>{help}{example && <>Example: <span className="font-mono">{example}</span>. </>}{note}</>}>
+            <BlurInput id={`reg-${key}`} value={regText(key, v.value)} disabled={!canEdit} placeholder="Not set" className={key === "id_prefix" || key === "languages" ? "font-mono" : ""}
               onCommit={(t) => set(s.id, path, !t ? null : kind === "list" ? t.split(isAddress ? /\s*[›>]\s*/ : /\s*,\s*/).filter(Boolean) : t)} />
           </Field>
         );
@@ -208,36 +217,81 @@ function RegistrationCard({ s }: { s: SiteView }) {
   );
 }
 
-function Dhis2Card({ s }: { s: SiteView }) {
-  const { set, canEdit } = useMatrix();
-  const i = s.detected?.integration;
-  const workflows = i?.workflows || [];
+/** Identifiers asked at registration: name, required or not, format shown to users. */
+function IdentifiersEditor({ value, onChange, disabled }: { value: Identifier[]; onChange: (v: Identifier[]) => void; disabled?: boolean }) {
+  const update = (i: number, patch: Partial<Identifier>) => {
+    const next = value.map((x, j) => (j === i ? { ...x, ...patch } : x)).map((x) => Object.fromEntries(Object.entries(x).filter(([, y]) => y !== "" && y !== undefined)) as unknown as Identifier);
+    if (!same(next, value)) onChange(next);
+  };
   return (
-    <Section title="DHIS2 reporting" description="Data the EMR sends to DHIS2 through OpenFn.">
-      <div className="flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2 text-sm"><span className="text-muted-foreground">Today</span><Dhis2Text s={s} className="font-medium" /></div>
-      <NeedRow label="Does this site need DHIS2 reporting?" value={s.integration?.need || null} disabled={!canEdit} onChange={(n) => set(s.id, "integration.need", n)} />
-      <Field id="f-dhis2" label="DHIS2 instance">
-        <BlurInput id="f-dhis2" value={s.integration?.dhis2_target || ""} disabled={!canEdit} placeholder="e.g. MSF OCG HMIS" onCommit={(t) => set(s.id, "integration.dhis2_target", t || null)} />
-      </Field>
-      {i && (
-        <ul className="grid gap-1 text-sm text-muted-foreground">
-          <li>{expandCodes(i.synced_forms).length} forms sent every day{i.staging_forms?.length ? `, ${expandCodes(i.staging_forms).length} more being tested` : ""}.</li>
-          {workflows.length > 0 && <li>{workflows.filter((w) => w.enabled).length} of {workflows.length} automatic jobs switched on.</li>}
-          {i.identical_to?.length ? <li>Its OpenFn setup is a copy of {i.identical_to.join(", ")} and was not adapted yet.</li> : null}
-          {i.version && <li>OpenFn configuration version {i.version}{i.version_date ? ` (${fmtDate(parseDate(i.version_date)!)})` : ""}.</li>}
-        </ul>
-      )}
-    </Section>
+    <div className="grid gap-2">
+      {value.map((x, i) => (
+        <div key={i} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+          <BlurInput id={`idn-${i}`} value={x.name} disabled={disabled} placeholder="Name" aria-label="Identifier name" onCommit={(t) => t ? update(i, { name: t }) : onChange(value.filter((_, j) => j !== i))} />
+          <BlurInput id={`idf-${i}`} value={x.format || ""} disabled={disabled} placeholder="Format, e.g. 5 digits" aria-label="Identifier format" className="col-span-3 row-start-2 sm:col-span-1 sm:row-start-auto" onCommit={(t) => update(i, { format: t || undefined })} />
+          <Label className="font-normal text-muted-foreground"><Checkbox checked={!!x.required} disabled={disabled} onCheckedChange={(c) => update(i, { required: c === true })} /> Required</Label>
+          <Button variant="ghost" size="icon-sm" aria-label="Remove identifier" disabled={disabled} onClick={() => onChange(value.filter((_, j) => j !== i))}><X /></Button>
+        </div>
+      ))}
+      {!value.length && <p className="text-sm text-muted-foreground">None.</p>}
+      {!disabled && <Button variant="outline" size="sm" className="w-fit" onClick={() => onChange([...value, { name: "New identifier", required: false }])}><Plus /> Add an identifier</Button>}
+    </div>
   );
 }
 
+/** One card per integration listed in `vocab.integrations`; DHIS2 also shows what the repo runs. */
+function IntegrationCards({ s }: { s: SiteView }) {
+  const { set, canEdit, vocab } = useMatrix();
+  return (
+    <>
+      {vocab.integrations.map((v) => {
+        const cur = s.integrations?.[v.id] || {};
+        const i = v.id === "dhis2" ? s.detected?.integration : null;
+        const workflows = i?.workflows || [];
+        return (
+          <Section key={v.id} title={v.label} description={v.hint}>
+            {v.id === "dhis2" && <div className="flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2 text-sm"><span className="text-muted-foreground">Today</span><Dhis2Text s={s} className="font-medium" /></div>}
+            <NeedRow label="Does this site need it?" value={cur.need || null} disabled={!canEdit} onChange={(n) => set(s.id, `integrations.${v.id}.need`, n)} />
+            <Field id={`f-int-${v.id}`} label="Where data goes">
+              <BlurInput id={`f-int-${v.id}`} value={cur.target || ""} disabled={!canEdit} placeholder={v.id === "dhis2" ? "e.g. Mental Health tracker program" : "Not set"} onCommit={(t) => set(s.id, `integrations.${v.id}.target`, t || null)} />
+            </Field>
+            <Field id={`f-intn-${v.id}`} label="Note">
+              <BlurInput id={`f-intn-${v.id}`} value={cur.note || ""} disabled={!canEdit} placeholder="Not set" onCommit={(t) => set(s.id, `integrations.${v.id}.note`, t || null)} />
+            </Field>
+            {i && (
+              <ul className="grid gap-1 text-sm text-muted-foreground">
+                <li>{expandCodes(i.synced_forms).length} forms sent every day{i.staging_forms?.length ? `, ${expandCodes(i.staging_forms).length} more being tested` : ""}.</li>
+                {workflows.length > 0 && <li>{workflows.filter((w) => w.enabled).length} of {workflows.length} automatic jobs switched on.</li>}
+                {i.identical_to?.length ? <li>Its OpenFn setup is a copy of {i.identical_to.join(", ")} and was not adapted yet.</li> : null}
+                {i.version && <li>OpenFn configuration version {i.version}{i.version_date ? ` (${fmtDate(parseDate(i.version_date)!)})` : ""}.</li>}
+              </ul>
+            )}
+          </Section>
+        );
+      })}
+    </>
+  );
+}
+
+const DATE = /^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$/;
+
 function NotesCard({ s }: { s: SiteView }) {
   const { set, canEdit } = useMatrix();
+  const [reviewError, setReviewError] = React.useState("");
+  const setUrl = (id: string, path: string, t: string) => set(id, path, !t ? null : /^https?:\/\//.test(t) ? t : "https://" + t);
   return (
     <Section title="Site details and notes">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="f-name" label="Site name"><BlurInput id="f-name" value={s.name} disabled={!canEdit} onCommit={(t) => set(s.id, "name", t || null)} /></Field>
-        <Field id="f-country" label="Country"><BlurInput id="f-country" value={s.country || ""} disabled={!canEdit} onCommit={(t) => set(s.id, "country", t || null)} /></Field>
+        <Field id="f-country" label="Country"><CountrySelect id="f-country" value={s.country} disabled={!canEdit} onChange={(c) => set(s.id, "country", c)} /></Field>
+        <Field id="f-org" label="Organisation"><OrgSelect id="f-org" value={s.org} disabled={!canEdit} onChange={(o) => set(s.id, "org", o)} /></Field>
+        <Field id="f-focal" label="Focal point"><BlurInput id="f-focal" value={s.focal_point || ""} disabled={!canEdit} placeholder="Name and role" onCommit={(t) => set(s.id, "focal_point", t || null)} /></Field>
+        <Field id="f-uat" label="UAT server"><BlurInput id="f-uat" value={s.environments?.uat || ""} disabled={!canEdit} placeholder="https://" onCommit={(t) => setUrl(s.id, "environments.uat", t)} /></Field>
+        <Field id="f-prod" label="Production server"><BlurInput id="f-prod" value={s.environments?.prod || ""} disabled={!canEdit} placeholder="https://" onCommit={(t) => setUrl(s.id, "environments.prod", t)} /></Field>
+        <Field id="f-reviewed" label="Requirements last reviewed" hint={reviewError || "A day, a month or a year."}>
+          <BlurInput id="f-reviewed" value={s.reviewed || ""} disabled={!canEdit} placeholder="2026-10-13" className="font-mono" aria-invalid={!!reviewError}
+            onCommit={(t) => { if (t && !DATE.test(t)) { setReviewError("Use YYYY-MM-DD, YYYY-MM or YYYY."); return; } setReviewError(""); set(s.id, "reviewed", t || null); }} />
+        </Field>
       </div>
       <Field id="f-open" label="Open questions" hint="One per line.">
         <Textarea id="f-open" key={`o-${(s.open_items || []).join("|")}`} rows={5} defaultValue={(s.open_items || []).join("\n")} disabled={!canEdit}
@@ -316,9 +370,8 @@ function Forms({ s }: { s: SiteView }) {
     name: p.name,
     items: p.forms.filter((f) => !f.custom || f.ownerId === s.id).map((f): ItemRow => {
       const isBuilt = !f.custom && built.has(f.code);
-      const need = f.custom
-        ? ((s.custom_forms || []).find((c) => c.code === f.code)?.need || "needed")
-        : (s.needs?.forms?.[f.code] ?? (isBuilt ? null : s.needs?.forms_default ?? null));
+      const d = s.forms?.[f.code];
+      const need = f.custom ? (d?.need || "needed") : (d?.need ?? (isBuilt ? null : s.forms_default ?? null));
       const cell = s.formCells[f.code];
       return { key: f.code, name: f.name, code: f.code, built: isBuilt, need, note: cell?.note, sync: cell?.sync as ItemRow["sync"], custom: f.custom, form: f };
     }),
@@ -332,12 +385,9 @@ function Forms({ s }: { s: SiteView }) {
     .filter((p) => p.rows.length);
 
   const change = (item: ItemRow, need: Need | null) => {
-    if (item.custom) {
-      const list = clone(s.custom_forms || []).map((c) => (c.code === item.key ? { ...c, need: need || "needed" } : c));
-      set(s.id, "custom_forms", list);
-    } else set(s.id, `needs.forms.${item.key}`, need);
+    set(s.id, `forms.${item.key}.need`, item.custom ? need || "needed" : need);
   };
-  const setProgram = (rows: ItemRow[], need: Need) => setMany(s.id, Object.fromEntries(rows.filter((r) => !r.custom).map((r) => [`needs.forms.${r.key}`, need])));
+  const setProgram = (rows: ItemRow[], need: Need) => setMany(s.id, Object.fromEntries(rows.filter((r) => !r.custom).map((r) => [`forms.${r.key}.need`, need])));
 
   return (
     <div className="grid gap-4">
@@ -400,13 +450,13 @@ function Forms({ s }: { s: SiteView }) {
 function Modules({ s }: { s: SiteView }) {
   const { lib, set, canEdit } = useMatrix();
   const built = new Set(s.detected?.modules || []);
-  const items: ItemRow[] = lib.modules.map((m) => ({ key: m.id, name: m.name, built: built.has(m.id), need: s.needs?.modules?.[m.id] ?? null }));
+  const items: ItemRow[] = lib.modules.map((m) => ({ key: m.id, name: m.name, built: built.has(m.id), need: s.modules?.[m.id] ?? null }));
   return (
     <div className="grid gap-4">
       <p className="max-w-3xl text-sm text-muted-foreground">The main parts of the EMR. Say which ones this site needs.</p>
       <Card className="py-0">
         <ul className="divide-y px-5">
-          {items.map((i) => <ItemLine key={i.key} item={i} disabled={!canEdit} onChange={(n) => set(s.id, `needs.modules.${i.key}`, n)} />)}
+          {items.map((i) => <ItemLine key={i.key} item={i} disabled={!canEdit} onChange={(n) => set(s.id, `modules.${i.key}`, n)} />)}
         </ul>
       </Card>
     </div>
@@ -421,8 +471,8 @@ function CopyFromSite({ s }: { s: SiteView }) {
   const active = (st?: string) => st === "on" || st === "todo";
   const changes: Record<string, string> = {};
   if (source) {
-    for (const f of lib.forms) if (active(source.formCells[f.code]?.st) && !active(s.formCells[f.code]?.st)) changes[`needs.forms.${f.code}`] = "needed";
-    for (const m of lib.modules) if (active(source.moduleCells[m.id]?.st) && !active(s.moduleCells[m.id]?.st)) changes[`needs.modules.${m.id}`] = "needed";
+    for (const f of lib.forms) if (active(source.formCells[f.code]?.st) && !active(s.formCells[f.code]?.st)) changes[`forms.${f.code}.need`] = "needed";
+    for (const m of lib.modules) if (active(source.moduleCells[m.id]?.st) && !active(s.moduleCells[m.id]?.st)) changes[`modules.${m.id}`] = "needed";
   }
   const n = Object.keys(changes).length;
   if (!canEdit) return null;

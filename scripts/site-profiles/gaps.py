@@ -31,15 +31,16 @@ def main(argv):
         if argv and s["id"] not in argv:
             continue
         det = s.get("detected") or {}
-        needs = s.get("needs") or {}
+        forms = s.get("forms") or {}
+        fneeds = {c: d.get("need") for c, d in forms.items() if not d.get("custom")}
+        mneeds = s.get("modules") or {}
         built_f, built_m = expand(det.get("forms")), set(det.get("modules") or [])
-        fneeds, mneeds = needs.get("forms") or {}, needs.get("modules") or {}
         todo = [c for c, n in sorted(fneeds.items()) if n == "needed" and c not in built_f]
-        new = [c["name"] for c in s.get("custom_forms") or [] if (c.get("need") or "needed") == "needed"]
+        new = [d.get("name") or c for c, d in forms.items() if d.get("custom") and (d.get("need") or "needed") == "needed"]
         todo_m = [m for m, n in sorted(mneeds.items()) if n == "needed" and m not in built_m]
         remove = [c for c, n in sorted(fneeds.items()) if n == "not_needed" and c in built_f]
         remove_m = [m for m, n in sorted(mneeds.items()) if n == "not_needed" and m in built_m]
-        integ = s.get("integration") or {}
+        integ = (s.get("integrations") or {}).get("dhis2") or {}
         dhis2 = integ.get("need") == "needed" and not (det.get("integration") or {}).get("status") == "live"
         if not (todo or new or todo_m or remove or remove_m or dhis2):
             continue
@@ -51,7 +52,7 @@ def main(argv):
         for m in todo_m:
             print("- [ ] Enable module: %s" % mods.get(m, m))
         if dhis2:
-            print("- [ ] Set up DHIS2 sync (OpenFn)%s" % (": " + integ["dhis2_target"] if integ.get("dhis2_target") else ""))
+            print("- [ ] Set up DHIS2 sync (OpenFn)%s" % (": " + integ["target"] if integ.get("target") else ""))
         for c in remove:
             print("- [ ] Remove form %s %s (built, marked not needed)" % (c, names.get(c, "")))
         for m in remove_m:

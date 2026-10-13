@@ -9,12 +9,26 @@ export interface Milestone {
   note?: string;
 }
 
-export interface CustomForm {
-  code: string;
-  name: string;
-  program?: string;
-  need?: Need;
+/** One form decision (in memory always the long form; `F11: needed` in the file). */
+export interface FormDecision {
+  need?: Need | null;
   note?: string | null;
+  /** A form made for this site, not in the library yet; its key is a site-specific code. */
+  custom?: boolean;
+  name?: string;
+  program?: string;
+}
+
+export interface Identifier {
+  name: string;
+  required?: boolean;
+  format?: string;
+}
+
+export interface Integration {
+  need?: Need | null;
+  target?: string | null;
+  note?: string;
 }
 
 export interface Detected {
@@ -26,7 +40,7 @@ export interface Detected {
   registration?: {
     id_prefix?: string;
     id_example?: string;
-    other_ids?: string[];
+    identifiers?: Identifier[];
     extra_fields?: string[];
     address?: string[];
     languages?: string[];
@@ -51,13 +65,18 @@ export interface Detected {
 export interface Profile {
   id: string;
   name?: string;
+  org?: string;
+  /** ISO 3166-1 alpha-2, e.g. KE */
   country?: string | null;
   status?: SiteStatus;
   phase?: string | null;
+  focal_point?: string | null;
+  reviewed?: string | null;
+  environments?: { uat?: string | null; prod?: string | null };
   milestones?: Record<string, Milestone>;
   registration?: {
     id_prefix?: string | null;
-    other_ids?: string[] | null;
+    identifiers?: Identifier[] | null;
     extra_fields?: string[] | null;
     address?: string[] | null;
     languages?: string[] | null;
@@ -65,19 +84,19 @@ export interface Profile {
   };
   locations?: string[] | null;
   services?: string[];
-  needs?: {
-    forms_default?: Need;
-    forms?: Record<string, Need>;
-    modules?: Record<string, Need>;
-  };
-  form_notes?: Record<string, string>;
-  custom_forms?: CustomForm[];
-  integration?: { need?: Need; dhis2_target?: string | null; note?: string };
+  forms_default?: Need;
+  forms?: Record<string, FormDecision>;
+  modules?: Record<string, Need>;
+  integrations?: Record<string, Integration>;
   open_items?: string[];
   notes?: string;
   detected?: Detected;
   [key: string]: unknown;
 }
+
+export interface VocabItem { id: string; label: string; hint?: string }
+export interface Vocab { milestones: VocabItem[]; integrations: VocabItem[] }
+export type Orgs = Record<string, { name: string; notes?: string | null }>;
 
 export interface LibraryForm {
   code: string;

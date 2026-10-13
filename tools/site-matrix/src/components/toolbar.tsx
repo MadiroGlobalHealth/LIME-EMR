@@ -1,6 +1,7 @@
 import { ChevronsDownUp, ChevronsUpDown, Download, Rows3, Rows4, Search } from "lucide-react";
 import { useMatrix } from "@/lib/store";
-import { LABEL, regValue } from "@/lib/model";
+import { countryName } from "@/lib/countries";
+import { LABEL, MILESTONES, regText, regValue } from "@/lib/model";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Checkbox } from "./ui/checkbox";
@@ -44,10 +45,11 @@ export function exportCsv(view: ReturnType<typeof useMatrix>["view"], lib: Retur
   const sites = view.sites;
   const rows: string[][] = [["Section", "Item", ...sites.map((s) => s.name)]];
   rows.push(["Site", "Status", ...sites.map((s) => s.status)]);
-  rows.push(["Site", "Country", ...sites.map((s) => s.country || "")]);
+  rows.push(["Site", "Country", ...sites.map((s) => countryName(s.country))]);
+  rows.push(["Site", "Organisation", ...sites.map((s) => s.org || "")]);
   rows.push(["Site", "Phase", ...sites.map((s) => s.phase || "")]);
-  for (const k of ["requirements", "uat", "prod", "live", "handover"]) rows.push(["Milestone", k, ...sites.map((s) => s.milestones?.[k]?.date || "")]);
-  for (const k of ["id_prefix", "languages", "address"]) rows.push(["Registration", k, ...sites.map((s) => { const v = regValue(s, k).value; return Array.isArray(v) ? v.join(" / ") : String(v ?? ""); })]);
+  for (const [k, label] of MILESTONES) rows.push(["Milestone", label, ...sites.map((s) => s.milestones?.[k]?.date || "")]);
+  for (const k of ["id_prefix", "identifiers", "languages", "address"]) rows.push(["Registration", k, ...sites.map((s) => regText(k, regValue(s, k).value))]);
   for (const m of lib.modules) rows.push(["Module", m.name, ...sites.map((s) => LABEL[s.moduleCells[m.id].st])]);
   rows.push(["DHIS2", "Integration", ...sites.map((s) => s.integrationCell.label)]);
   for (const f of view.rows) rows.push([`Form: ${f.program}`, `${f.custom ? "" : f.code + " "}${f.name}`, ...sites.map((s) => LABEL[s.formCells[f.code]?.st || "unk"])]);

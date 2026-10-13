@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ArrowRight, Plus, Search, Table2 } from "lucide-react";
 import { useMatrix } from "@/lib/store";
+import { countryName } from "@/lib/countries";
 import { daysFromToday, fmtDate, nextMilestone, type SiteView } from "@/lib/model";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -14,10 +15,10 @@ import { Dhis2Text, formsProgress, idPrefix, NextStep, relDays } from "./site-bi
 type Filter = "all" | "live" | "preparation" | "planned";
 
 export function SitesHome({ onOpen, onCompare, onAdd }: { onOpen: (id: string) => void; onCompare: () => void; onAdd: () => void }) {
-  const { view, canEdit } = useMatrix();
+  const { view, canEdit, orgs } = useMatrix();
   const [filter, setFilter] = React.useState<Filter>("all");
   const [q, setQ] = React.useState("");
-  const sites = view.sites.filter((s) => (filter === "all" || s.status === filter) && `${s.name} ${s.country || ""}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const sites = view.sites.filter((s) => (filter === "all" || s.status === filter) && `${s.name} ${countryName(s.country)} ${orgs[s.org || ""]?.name || ""}`.toLowerCase().includes(q.trim().toLowerCase()));
   const count = (st: string) => view.sites.filter((s) => s.status === st).length;
 
   return (
@@ -86,7 +87,8 @@ function Summary() {
 function SiteCard({ s, onOpen }: { s: SiteView; onOpen: () => void }) {
   const p = formsProgress(s);
   const prefix = idPrefix(s);
-  const { pending } = useMatrix();
+  const { pending, orgs } = useMatrix();
+  const multiOrg = Object.keys(orgs).length > 1;
   const unsaved = !!pending[s.id];
   return (
     <Card className="group relative gap-4 py-5 transition-shadow hover:shadow-md">
@@ -98,7 +100,7 @@ function SiteCard({ s, onOpen }: { s: SiteView; onOpen: () => void }) {
         <CardTitle className="text-lg">
           <button className="cursor-pointer text-left after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:outline-none" onClick={onOpen}>{s.name}</button>
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{[s.country, s.phase].filter(Boolean).join(" · ") || "No details yet"}</p>
+        <p className="text-sm text-muted-foreground">{[countryName(s.country), multiOrg && orgs[s.org || ""]?.name, s.phase].filter(Boolean).join(" · ") || "No details yet"}</p>
       </CardHeader>
       <CardContent className="grid gap-4 px-5">
         <p className="text-sm text-muted-foreground"><NextStep s={s} /></p>

@@ -2,7 +2,8 @@ import * as React from "react";
 import { flexRender, getCoreRowModel, getExpandedRowModel, useReactTable, type ColumnDef, type ExpandedState, type Row } from "@tanstack/react-table";
 import { ChevronRight, Info } from "lucide-react";
 import { useMatrix } from "@/lib/store";
-import { daysFromToday, fmtDate, LABEL, MILESTONES, nextMilestone, parseDate, programCell, REG_ROWS, regValue, type FormRow, type Program, type SiteView } from "@/lib/model";
+import { daysFromToday, fmtDate, LABEL, MILESTONES, nextMilestone, parseDate, programCell, REG_ROWS, regText, regValue, type FormRow, type Program, type SiteView } from "@/lib/model";
+import { countryName } from "@/lib/countries";
 import { expandCodes, same } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 import { Chip, PendingDot, StatusBadge } from "./chip";
@@ -97,16 +98,16 @@ export function Matrix({ ui, onEdit, onOpenSite }: { ui: UiState; onEdit: (r: Ed
     switch (r.kind) {
       case "milestone": return { site: s.id, kind: "milestone", path: `milestones.${r.key}`, title: r.label };
       case "phase": return { site: s.id, kind: "text", path: "phase", title: "Phase" };
-      case "reg": return { site: s.id, kind: r.editor, path: r.path, title: r.label };
-      case "module": return { site: s.id, kind: "need", path: `needs.modules.${r.moduleId}`, title: r.label };
-      case "int": return r.key === "target" ? { site: s.id, kind: "text", path: "integration.dhis2_target", title: "DHIS2 target" } : null;
+      case "reg": return r.key === "identifiers" ? null : { site: s.id, kind: r.editor, path: r.path, title: r.label };
+      case "module": return { site: s.id, kind: "need", path: `modules.${r.moduleId}`, title: r.label };
+      case "int": return r.key === "target" ? { site: s.id, kind: "text", path: "integrations.dhis2.target", title: "DHIS2 target" } : null;
       case "program": return { site: s.id, kind: "need", path: null, title: `${r.program.name} (all forms)`, program: r.program };
       case "form":
-        if (r.form.custom) return r.form.ownerId === s.id ? { site: s.id, kind: "need", path: "custom_forms", title: r.form.name, form: r.form } : null;
-        return { site: s.id, kind: "need", path: `needs.forms.${r.form.code}`, title: `${r.form.code} ${r.form.name}`, form: r.form };
+        if (r.form.custom) return r.form.ownerId === s.id ? { site: s.id, kind: "need", path: `forms.${r.form.code}.need`, title: r.form.name, form: r.form } : null;
+        return { site: s.id, kind: "need", path: `forms.${r.form.code}.need`, title: `${r.form.code} ${r.form.name}`, form: r.form };
       case "section":
         if (r.section === "reg") return { site: s.id, kind: "text", path: "registration.id_prefix", title: "MSF ID prefix" };
-        if (r.section === "int") return { site: s.id, kind: "need", path: "integration.need", title: "DHIS2 integration" };
+        if (r.section === "int") return { site: s.id, kind: "need", path: "integrations.dhis2.need", title: "DHIS2 integration" };
         return null;
       default: return null;
     }
@@ -233,7 +234,7 @@ function SiteHeader({ s, pending, statusPending, onOpen, onStatus }: { s: SiteVi
       </button>
       <button className="group grid gap-0.5 text-left" onClick={onOpen}>
         <span className="text-[15px] font-semibold leading-tight group-hover:underline">{s.name}</span>
-        <span className="text-xs text-muted-foreground">{s.country || "–"}</span>
+        <span className="text-xs text-muted-foreground">{countryName(s.country) || "–"}</span>
       </button>
       {pending && <PendingDot className="right-0 top-0" />}
     </div>
@@ -264,9 +265,9 @@ function SiteCell({ r, s, isPending }: { r: RowData; s: SiteView; isPending: (si
     case "reg": return <Pend on={isPending(s.id, r.path)}><RegValue s={s} k={r.key} /></Pend>;
     case "module": {
       const c = s.moduleCells[r.moduleId];
-      return <Center><Tip content={c.title}><Chip state={c.st} pending={isPending(s.id, `needs.modules.${r.moduleId}`)}>{LABEL[c.st]}</Chip></Tip></Center>;
+      return <Center><Tip content={c.title}><Chip state={c.st} pending={isPending(s.id, `modules.${r.moduleId}`)}>{LABEL[c.st]}</Chip></Tip></Center>;
     }
-    case "int": return <IntValue s={s} k={r.key} pending={isPending(s.id, "integration.dhis2_target")} />;
+    case "int": return <IntValue s={s} k={r.key} pending={isPending(s.id, "integrations.dhis2.target")} />;
     case "program": {
       const c = programCell(s, r.program);
       return <Center><Chip state={c.st} title={c.title}>{c.label}</Chip></Center>;
@@ -274,10 +275,10 @@ function SiteCell({ r, s, isPending }: { r: RowData; s: SiteView; isPending: (si
     case "form": {
       const c = s.formCells[r.form.code];
       if (!c) return null;
-      const path = r.form.custom ? "custom_forms" : `needs.forms.${r.form.code}`;
+      const path = `forms.${r.form.code}`;
       return (
         <Center>
-          <Tip content={c.title}><Chip state={c.st} pending={isPending(s.id, path)}>{LABEL[c.st]}</Chip></Tip>
+          <Tip content={c.title}><Chip state={c.st} pending={isPending(s.id, path, true)}>{LABEL[c.st]}</Chip></Tip>
           {c.sync && <Tip content={c.sync === "live" ? "Synced to DHIS2 by the production OpenFn workflow" : "Mapped in the staging OpenFn project only"}><span className={cn("rounded border px-1 text-[9.5px] font-bold leading-[14px] text-brand", c.sync === "staging" && "border-dashed text-muted-foreground")}>D2</span></Tip>}
           {c.note && <Tip content={c.note}><Info className="size-3.5 text-muted-foreground" /></Tip>}
         </Center>
@@ -317,7 +318,7 @@ function SectionSummary({ section, s, isPending }: { section: string; s: SiteVie
   if (section === "mods") return <Counts c={s.stats.modules} />;
   if (section === "int") {
     const c = s.integrationCell;
-    return <div className="grid gap-1"><Tip content={c.title}><Chip state={c.st} pending={isPending(s.id, "integration.need")} className="w-fit">{c.label}</Chip></Tip><span className="text-xs text-muted-foreground">{c.sub}</span></div>;
+    return <div className="grid gap-1"><Tip content={c.title}><Chip state={c.st} pending={isPending(s.id, "integrations.dhis2.need")} className="w-fit">{c.label}</Chip></Tip><span className="text-xs text-muted-foreground">{c.sub}</span></div>;
   }
   return <div className="grid gap-0.5"><Counts c={s.stats.forms} /><span className="text-xs text-muted-foreground">{s.stats.reuse === null ? "No forms scoped" : `${s.stats.reuse}% from shared library`}</span></div>;
 }
@@ -342,20 +343,20 @@ function MilestoneValue({ s, k }: { s: SiteView; k: string }) {
 function RegValue({ s, k }: { s: SiteView; k: string }) {
   const v = regValue(s, k);
   if (v.value == null || (Array.isArray(v.value) && !v.value.length)) return s.detected || s.registration ? tbd() : muted;
-  const text = Array.isArray(v.value) ? v.value.join(k === "address" ? " › " : ", ") : String(v.value);
+  const text = regText(k, v.value);
   const differs = v.plan != null && v.det != null && !same(v.plan, v.det) && !(Array.isArray(v.plan) && !v.plan.length);
   return (
     <div className="grid text-[12.5px]">
       {k === "id_prefix" ? <span className="font-mono font-semibold">{text}</span> : <span>{text}</span>}
       {k === "id_prefix" && v.value === s.detected?.registration?.id_prefix && s.detected?.registration?.id_example && <span className="text-xs text-muted-foreground">e.g. {s.detected.registration.id_example}</span>}
-      {differs && <span className="text-[11px] text-hold" title="The site build has a different value: the repo config still needs this change">Repo: {Array.isArray(v.det) ? (v.det as string[]).join(", ") : String(v.det)}</span>}
+      {differs && <span className="text-[11px] text-hold" title="The site build has a different value: the repo config still needs this change">Repo: {regText(k, v.det)}</span>}
     </div>
   );
 }
 
 function IntValue({ s, k, pending }: { s: SiteView; k: string; pending: boolean }) {
   const i = s.detected?.integration;
-  if (k === "target") return <Pend on={pending}>{s.integration?.dhis2_target ? <span className="text-[12.5px]">{s.integration.dhis2_target}</span> : i || s.integration?.need ? tbd() : muted}</Pend>;
+  if (k === "target") return <Pend on={pending}>{s.integrations?.dhis2?.target ? <span className="text-[12.5px]">{s.integrations.dhis2.target}</span> : i || s.integrations?.dhis2?.need ? tbd() : muted}</Pend>;
   if (!i) return muted;
   if (k === "version") return <div className="grid"><span className="font-mono text-[12.5px] font-semibold">{i.version || "?"}</span>{i.version_date && <span className="text-xs text-muted-foreground">{fmtDate(parseDate(i.version_date)!)}</span>}</div>;
   if (k === "workflows") return (
