@@ -1,5 +1,7 @@
 # Comment nous décrire un besoin à tester
 
+> **Pour vérifier un formulaire**, le plus simple est la [fiche Excel pré-remplie](fiches/README.md) : tout est déjà listé, il suffit de répondre Oui ou Non ligne par ligne. Ce qui suit sert pour les autres besoins (droits d'accès, rapports, parcours patient...).
+
 Pas besoin de format technique. Pour chaque besoin, il suffit de répondre à 3 questions :
 
 1. **Quoi ?** Ce que le système doit faire, en une phrase.

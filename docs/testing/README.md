@@ -21,7 +21,8 @@ Push every check down to the lowest level that can prove it. Most form logic (sc
 
 ## 2. Writing test cases
 
-- MSF describes needs in a simple four-column table (what, for whom, if I do, I must see): [modele-cas-de-test.md](modele-cas-de-test.md), in French.
+- **Per form**: `scripts/form-test-sheet.py` generates an Excel review sheet pre-filled from the form JSON (questions, answers, mandatory, skip logic in plain French, limits). MSF marks each line correct or not and adds scenarios. See [fiches/](fiches/README.md).
+- For anything else, MSF describes needs in a simple four-column table (what, for whom, if I do, I must see): [modele-cas-de-test.md](modele-cas-de-test.md), in French.
 - The team (with the `lime-test-case` skill) expands each need into numbered test cases, kept in a collapsed section at the bottom of the same file.
 - Worked example: [exemples/REQ-MH-PHQ9-001.md](exemples/REQ-MH-PHQ9-001.md). New ones go in `docs/testing/cas-de-test/<REQ-ID>.md`.
 

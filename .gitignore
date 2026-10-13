@@ -395,3 +395,4 @@ dist
 /blob-report/
 /playwright/.cache/
 /.playwright-mcp/*
+__pycache__/

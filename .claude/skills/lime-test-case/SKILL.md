@@ -13,6 +13,12 @@ Accept any of: a Jira key (`LIME2-123`, read it with the Jira tools if connected
 
 ## Steps
 
+0. **If the input is a returned form review sheet** (`docs/testing/fiches/retours/*.xlsx`, made by `scripts/form-test-sheet.py`): read it with openpyxl. Tab `Questions`: the hidden column K is the question id; column H is MSF's verdict (Oui / Non / Je ne sais pas), I the correction, J a remark or example. Tab `Scénarios`: Pour qui / Si je fais / Je dois voir / Important, ignore the grey example row. Tab `Listes longues`: remarks on individual answers.
+   - "Oui" rows: the current configuration is confirmed. Generate test cases that lock it in (skip logic both ways, limits on both sides, mandatory), mostly at configuration level.
+   - "Non" rows: a change request. Generate the test case for the expected behaviour (it will fail until the form is fixed) and list the change in a summary for the team to open a Jira ticket. Never edit the form yourself from the sheet.
+   - "Je ne sais pas" rows and blanks: list as open questions.
+   - Regenerate the sheet from the current form and compare: if the form changed since the sheet was sent, say which rows MSF reviewed against an older version.
+
 1. **Read the example first**: `docs/testing/exemples/REQ-MH-PHQ9-001.md`. MSF writes requirements in the simple four-column format of `docs/testing/modele-cas-de-test.md` (Quoi ? / Pour qui ? / Si je fais... / Je dois voir...). Your job is to expand that into the detailed format below. Check `docs/testing/cas-de-test/` for existing IDs so you do not reuse one.
 2. **Ground every rule in the configuration**. Never invent labels, thresholds or roles. Look them up:
    - Forms: `distro/configs/openmrs/initializer_config/ampathforms/*.json` and `sites/<site>/configs/openmrs/initializer_config/ampathforms/` (question `id`, `label`, `required`, `hide.hideWhenExpression`, `questionOptions.answers`, `calculate.calculateExpression`, `validators`, `min`/`max`).
