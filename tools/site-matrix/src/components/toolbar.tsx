@@ -3,8 +3,10 @@ import { useMatrix } from "@/lib/store";
 import { LABEL, regValue } from "@/lib/model";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Segmented } from "./ui/segmented";
-import { Tip } from "./ui/tooltip";
+import { Checkbox } from "./ui/checkbox";
+import { Label } from "./ui/label";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
+import { Tip } from "./tip";
 import type { StatusFilter, UiState } from "./ui-state";
 
 export function Toolbar({ ui }: { ui: UiState }) {
@@ -12,16 +14,20 @@ export function Toolbar({ ui }: { ui: UiState }) {
   const allIds = ["sec:time", "sec:reg", "sec:mods", "sec:int", "sec:forms", ...view.programs.map((p) => `prog:${p.name}`)];
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Segmented<StatusFilter> label="Filter sites by status" value={ui.statusFilter} onChange={ui.setStatusFilter}
-        options={[["all", "All sites"], ["live", "Live"], ["preparation", "Preparation"], ["planned", "Planned"]]} />
+      <ToggleGroup type="single" variant="outline" aria-label="Filter sites by status" value={ui.statusFilter}
+        onValueChange={(v) => v && ui.setStatusFilter(v as StatusFilter)}>
+        {([["all", "All sites"], ["live", "Live"], ["preparation", "Preparation"], ["planned", "Planned"]] as const).map(([v, text]) => (
+          <ToggleGroupItem key={v} value={v} className="px-3">{text}</ToggleGroupItem>
+        ))}
+      </ToggleGroup>
       <div className="relative min-w-0 flex-[1_1_220px] sm:max-w-xs">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input value={ui.q} onChange={(e) => ui.setQ(e.target.value)} placeholder="Filter forms and programs" className="pl-8" aria-label="Filter forms and programs" />
       </div>
-      <label className="inline-flex cursor-pointer items-center gap-2 px-1 text-sm text-muted-foreground">
-        <input type="checkbox" checked={ui.onlyUsed} onChange={(e) => ui.setOnlyUsed(e.target.checked)} className="size-4 accent-[var(--primary)]" />
+      <Label className="cursor-pointer px-1 font-normal text-muted-foreground">
+        <Checkbox checked={ui.onlyUsed} onCheckedChange={(c) => ui.setOnlyUsed(c === true)} />
         Only forms in use or needed
-      </label>
+      </Label>
       <div className="ml-auto flex items-center gap-1.5">
         <Tip content="Expand all"><Button variant="outline" size="icon" aria-label="Expand all" onClick={() => ui.expandAll(allIds)}><ChevronsUpDown /></Button></Tip>
         <Tip content="Collapse all"><Button variant="outline" size="icon" aria-label="Collapse all" onClick={() => ui.expandAll(null)}><ChevronsDownUp /></Button></Tip>

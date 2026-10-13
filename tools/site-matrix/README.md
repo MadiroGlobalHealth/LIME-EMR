@@ -5,8 +5,8 @@ each site needs. Any value can be edited in place; saving commits the site profi
 (`docs/site-matrix/profiles/<site>.md`) to GitHub under the editor's own account, so the history
 shows who changed what.
 
-Stack: React 19, TypeScript, Vite, Tailwind CSS 4 with shadcn/ui-style components on Radix,
-TanStack Table, cmdk (⌘K search), sonner (notifications). It is a static site plus a small
+Stack: React 19, TypeScript, Vite, Tailwind CSS 4, [shadcn/ui](https://ui.shadcn.com) (new-york style,
+neutral theme) on Radix, TanStack Table, cmdk (⌘K search), sonner (notifications). It is a static site plus a small
 "Sign in with GitHub" function, deployable to Vercel or Cloudflare Pages.
 
 ## How it works
@@ -33,6 +33,13 @@ python3 ../../scripts/site-profiles/build.py   # refresh src/snapshot.json from 
 
 End-to-end test against a simulated GitHub API: `npm run build && npx vite preview --port 4173 &`
 then `node tests/e2e.mjs` (needs Playwright).
+
+UI components live in `src/components/ui` and are the stock shadcn/ui sources (`components.json` is
+set up, so `npx shadcn@latest add <component>` adds more). Two local changes: `Toaster` takes the
+theme as a prop instead of using next-themes, and `Table` accepts `containerClassName` so the matrix
+can scroll inside it with a sticky header and first column. Theme tokens are the standard shadcn
+ones in `src/index.css`, plus the matrix state colors (`on`, `todo`, `hold`, `new`, `none`) and
+`brand` (MSF red, used for the logo, "Save to GitHub" and the DHIS2 marker).
 
 `rollup` is pinned to 4.44.1 in `package.json` (overrides): Rollup 4.64.0 loops forever while
 tree-shaking this app.

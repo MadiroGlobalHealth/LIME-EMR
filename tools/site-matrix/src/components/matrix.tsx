@@ -5,8 +5,10 @@ import { useMatrix } from "@/lib/store";
 import { daysFromToday, fmtDate, LABEL, MILESTONES, nextMilestone, parseDate, programCell, REG_ROWS, regValue, type FormRow, type Program, type SiteView } from "@/lib/model";
 import { expandCodes, same } from "@/lib/profile";
 import { cn } from "@/lib/utils";
-import { Chip, PendingDot, StatusBadge } from "./ui/chip";
-import { Tip } from "./ui/tooltip";
+import { Chip, PendingDot, StatusBadge } from "./chip";
+import { Tip } from "./tip";
+import { Badge } from "./ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import type { EditRequest } from "./cell-editor";
 import type { UiState } from "./ui-state";
 
@@ -139,49 +141,50 @@ export function Matrix({ ui, onEdit, onOpenSite }: { ui: UiState; onEdit: (r: Ed
   const pad = ui.density === "compact" ? "py-1" : "py-2";
 
   return (
-    <div className="max-h-[calc(100dvh-7rem)] min-h-[360px] overflow-auto rounded-xl border bg-card shadow-xs" data-testid="matrix">
-      <table ref={gridRef} role="grid" aria-label="Site matrix" onKeyDown={onKeyDown} className="border-separate border-spacing-0 text-sm tabular-nums">
-        <thead>
+    <div className="min-w-0 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm" data-testid="matrix">
+      <Table ref={gridRef} role="grid" aria-label="Site matrix" onKeyDown={onKeyDown} containerClassName="max-h-[calc(100dvh-7rem)] min-h-[360px] overflow-auto rounded-xl"
+        className="w-auto border-separate border-spacing-0 tabular-nums">
+        <TableHeader>
           {table.getHeaderGroups().map((hg) => (
-            <tr key={hg.id}>
+            <TableRow key={hg.id} className="hover:bg-transparent">
               {hg.headers.map((h, i) => (
-                <th key={h.id} scope="col"
-                  className={cn("sticky top-0 border-b border-r bg-card px-3 py-2.5 text-left align-bottom font-normal",
+                <TableHead key={h.id} scope="col"
+                  className={cn("sticky top-0 h-auto border-b border-r bg-card px-3 py-2.5 align-bottom font-normal whitespace-normal",
                     i === 0 ? "left-0 z-30 w-[268px] min-w-[220px] max-w-[268px]" : "z-20 w-[164px] min-w-[164px]")}>
                   {flexRender(h.column.columnDef.header, h.getContext())}
-                </th>
+                </TableHead>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </thead>
-        <tbody>
+        </TableHeader>
+        <TableBody>
           {rows.map((row, ri) => {
             const r = row.original;
             const isSection = r.kind === "section";
             return (
-              <tr key={row.id} className={cn("group/row", isSection ? "bg-muted/60" : "hover:bg-muted/40")}>
+              <TableRow key={row.id} className={cn("group/row border-0", isSection ? "bg-muted/60 hover:bg-muted/60" : "hover:bg-muted/40")}>
                 {row.getVisibleCells().map((cell, ci) => {
                   const site = ci > 0 ? sites[ci - 1] : null;
                   const editable = ci > 0 && canEdit && site ? (r.kind === "openitems" || !!editFor(r, site)) : ci === 0 && (r.kind === "section" || r.kind === "program");
                   return (
-                    <td key={cell.id} data-cell={`${ri}:${ci}`} tabIndex={active[0] === ri && active[1] === ci ? 0 : -1}
+                    <TableCell key={cell.id} data-cell={`${ri}:${ci}`} tabIndex={active[0] === ri && active[1] === ci ? 0 : -1}
                       role="gridcell"
                       onFocus={() => setActive([ri, ci])}
                       onClick={(e) => { if (ci === 0 || canEdit || r.kind === "openitems") activate(ri, ci, e.currentTarget); else onEdit({ site: site!.id, kind: "denied", path: null, title: "", anchor: e.currentTarget }); }}
-                      className={cn("border-b border-r px-3 align-top outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", pad,
+                      className={cn("border-b border-r px-3 align-top whitespace-normal outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", pad,
                         ci === 0 ? "sticky left-0 z-10 bg-card group-hover/row:bg-muted" : "",
                         ci === 0 && isSection && "bg-muted",
                         editable && ci > 0 && "cursor-pointer hover:bg-new-bg/40",
                         ci === 0 && (r.kind === "section" || r.kind === "program") && "cursor-pointer")}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
+                    </TableCell>
                   );
                 })}
-              </tr>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -208,7 +211,7 @@ function RowLabel({ row, onToggle }: { row: Row<RowData>; onToggle: () => void }
         <div className="pl-12 text-[13px]">
           {!r.form.custom && <span className="mr-1.5 font-mono text-[11px] text-muted-foreground">{r.form.code}</span>}
           {r.form.name}
-          {r.form.custom && <span className="ml-1.5 rounded bg-new-bg px-1.5 py-px text-[10px] font-semibold uppercase text-new" title={`Site-specific form for ${r.form.owner}`}>New</span>}
+          {r.form.custom && <Badge variant="outline" className="ml-1.5 border-new/30 bg-new-bg px-1.5 py-0 text-[10px] uppercase text-new" title={`Site-specific form for ${r.form.owner}`}>New</Badge>}
           {!r.form.custom && r.form.in_library === false && <span className="ml-1 text-xs text-muted-foreground" title="Not yet in the distro form library">◌</span>}
         </div>
       );
@@ -275,7 +278,7 @@ function SiteCell({ r, s, isPending }: { r: RowData; s: SiteView; isPending: (si
       return (
         <Center>
           <Tip content={c.title}><Chip state={c.st} pending={isPending(s.id, path)}>{LABEL[c.st]}</Chip></Tip>
-          {c.sync && <Tip content={c.sync === "live" ? "Synced to DHIS2 by the production OpenFn workflow" : "Mapped in the staging OpenFn project only"}><span className={cn("rounded border px-1 text-[9.5px] font-bold leading-[14px] text-accent", c.sync === "staging" && "border-dashed text-muted-foreground")}>D2</span></Tip>}
+          {c.sync && <Tip content={c.sync === "live" ? "Synced to DHIS2 by the production OpenFn workflow" : "Mapped in the staging OpenFn project only"}><span className={cn("rounded border px-1 text-[9.5px] font-bold leading-[14px] text-brand", c.sync === "staging" && "border-dashed text-muted-foreground")}>D2</span></Tip>}
           {c.note && <Tip content={c.note}><Info className="size-3.5 text-muted-foreground" /></Tip>}
         </Center>
       );
@@ -290,7 +293,7 @@ function SectionSummary({ section, s, isPending }: { section: string; s: SiteVie
     const n = nextMilestone(s);
     if (n) {
       const d = daysFromToday(n.pd.date);
-      const rel = n.pd.prec < 3 ? "target" : d < 0 ? <span className="font-medium text-crit">overdue {-d} d</span> : d <= 14 ? <span className="font-medium text-hold">in {d} d</span> : `in ${d} d`;
+      const rel = n.pd.prec < 3 ? "target" : d < 0 ? <span className="font-medium text-destructive">overdue {-d} d</span> : d <= 14 ? <span className="font-medium text-hold">in {d} d</span> : `in ${d} d`;
       return <div className="grid text-[13px]"><span className="font-medium">{n.label}</span><span className="text-xs text-muted-foreground">{fmtDate(n.pd)} · {rel}</span></div>;
     }
     const live = parseDate(s.milestones?.live?.date);
@@ -305,7 +308,7 @@ function SectionSummary({ section, s, isPending }: { section: string; s: SiteVie
       <Pend on={isPending(s.id, "registration.id_prefix")}>
         <div className="grid">
           <span className="flex items-center gap-1.5">{p ? <span className="font-mono text-[13px] font-semibold">{p}</span> : tbd("Prefix TBD")}
-            {s.registration?.custom_form && <span className="rounded bg-new-bg px-1 text-[10px] font-semibold uppercase text-new">New</span>}</span>
+            {s.registration?.custom_form && <Badge variant="outline" className="border-new/30 bg-new-bg px-1.5 py-0 text-[10px] uppercase text-new">New</Badge>}</span>
           <span className="text-xs text-muted-foreground">{Array.isArray(l) ? l.join(", ") : "Languages TBD"}</span>
         </div>
       </Pend>
@@ -326,7 +329,7 @@ function MilestoneValue({ s, k }: { s: SiteView; k: string }) {
   if (!pd) return <span title={m.note}>{tbd(m.done ? "Done, date TBC" : "Date TBC")}</span>;
   let rel: React.ReactNode;
   if (m.done) rel = <span className="text-on">Done</span>;
-  else if (pd.prec === 3) { const d = daysFromToday(pd.date); rel = <span className={d < 0 ? "font-medium text-crit" : d <= 14 ? "font-medium text-hold" : "text-muted-foreground"}>{d < 0 ? `Overdue ${-d} d` : d === 0 ? "Today" : `In ${d} d`}</span>; }
+  else if (pd.prec === 3) { const d = daysFromToday(pd.date); rel = <span className={d < 0 ? "font-medium text-destructive" : d <= 14 ? "font-medium text-hold" : "text-muted-foreground"}>{d < 0 ? `Overdue ${-d} d` : d === 0 ? "Today" : `In ${d} d`}</span>; }
   else rel = <span className="text-muted-foreground">Target</span>;
   return (
     <div className="grid text-[13px]" title={m.note}>

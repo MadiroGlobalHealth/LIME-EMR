@@ -1,21 +1,33 @@
 @import "tailwindcss" source(none);
+@import "tw-animate-css";
 @source "../src";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:is(.dark *));
 
-/* Design tokens (shadcn/ui conventions). Neutrals lean slightly blue; the red accent is MSF's. */
+/* shadcn/ui theme (new-york, neutral base). The matrix adds its own state colors and the MSF red as
+   "brand"; everything else uses the standard shadcn tokens so stock components drop in unchanged. */
 :root {
-  --background: oklch(0.985 0.002 250);
-  --foreground: oklch(0.21 0.02 255);
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
-  --muted: oklch(0.965 0.004 250);
-  --muted-foreground: oklch(0.52 0.02 255);
-  --border: oklch(0.915 0.006 250);
-  --ring: oklch(0.55 0.15 25);
-  --primary: oklch(0.24 0.02 255);
-  --primary-foreground: oklch(0.985 0 0);
-  --accent: oklch(0.52 0.19 25);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --brand: oklch(0.55 0.21 27);
+  --brand-foreground: oklch(0.985 0 0);
 
   --on: oklch(0.52 0.12 158);
   --on-bg: oklch(0.95 0.04 158);
@@ -25,22 +37,29 @@
   --hold-bg: oklch(0.96 0.05 80);
   --new: oklch(0.52 0.19 300);
   --new-bg: oklch(0.95 0.04 300);
-  --crit: oklch(0.58 0.19 35);
-  --none: oklch(0.7 0.015 255);
-  --radius: 0.625rem;
+  --none: oklch(0.7 0 0);
 }
 .dark {
-  --background: oklch(0.16 0.012 255);
-  --foreground: oklch(0.95 0.005 250);
-  --card: oklch(0.2 0.014 255);
-  --muted: oklch(0.24 0.014 255);
-  --muted-foreground: oklch(0.7 0.015 255);
-  --border: oklch(0.3 0.015 255);
-  --ring: oklch(0.68 0.16 25);
-  --primary: oklch(0.95 0.005 250);
-  --primary-foreground: oklch(0.2 0.014 255);
-  --accent: oklch(0.68 0.17 25);
-  --popover: oklch(0.22 0.014 255);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --brand: oklch(0.66 0.19 25);
+  --brand-foreground: oklch(0.985 0 0);
 
   --on: oklch(0.78 0.13 158);
   --on-bg: oklch(0.3 0.05 158);
@@ -50,22 +69,30 @@
   --hold-bg: oklch(0.32 0.05 75);
   --new: oklch(0.78 0.13 300);
   --new-bg: oklch(0.3 0.06 300);
-  --crit: oklch(0.75 0.15 40);
-  --none: oklch(0.55 0.015 255);
+  --none: oklch(0.55 0 0);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-ring: var(--ring);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
-  --color-popover: var(--popover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-on: var(--on);
   --color-on-bg: var(--on-bg);
   --color-todo: var(--todo);
@@ -74,7 +101,6 @@
   --color-hold-bg: var(--hold-bg);
   --color-new: var(--new);
   --color-new-bg: var(--new-bg);
-  --color-crit: var(--crit);
   --color-none: var(--none);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -85,17 +111,14 @@
 }
 
 @layer base {
-  * { border-color: var(--border); }
+  * { @apply border-border outline-ring/50; }
   html { color-scheme: light; }
   html.dark { color-scheme: dark; }
   body {
-    background: var(--background);
-    color: var(--foreground);
+    @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
   }
-  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
 
 /* "Needed" chips: hatched, so planned work reads differently from what is built. */

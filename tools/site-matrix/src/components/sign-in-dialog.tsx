@@ -2,9 +2,12 @@ import * as React from "react";
 import { Github, KeyRound } from "lucide-react";
 import { useMatrix } from "@/lib/store";
 import { oauthAvailable, startOAuth } from "@/lib/auth";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "./ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Alert, AlertDescription } from "./ui/alert";
 import { Button } from "./ui/button";
-import { Input, Label } from "./ui/input";
+import { Checkbox } from "./ui/checkbox";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export function SignInDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { cfg, signInWithToken } = useMatrix();
@@ -27,34 +30,35 @@ export function SignInDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="center" className="gap-4 overflow-y-auto p-6">
-        <div className="grid gap-1.5 pr-8">
-          <SheetTitle className="text-xl font-semibold">Sign in to edit</SheetTitle>
-          <SheetDescription className="text-sm text-muted-foreground">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Sign in to edit</DialogTitle>
+          <DialogDescription>
             Every save is a commit to <b className="font-medium text-foreground">{cfg.owner}/{cfg.repo}</b> by your GitHub account, so the history shows who changed what. You need write access to the repository.
-          </SheetDescription>
-        </div>
-        {oauth && <Button size="default" className="h-10" onClick={startOAuth}><Github /> Sign in with GitHub</Button>}
+          </DialogDescription>
+        </DialogHeader>
+        {oauth && <Button size="lg" onClick={startOAuth}><Github /> Sign in with GitHub</Button>}
         {oauth && !showToken && <Button variant="link" size="sm" className="w-fit" onClick={() => setShowToken(true)}><KeyRound /> Use a personal access token instead</Button>}
         {oauth === null && <p className="text-sm text-muted-foreground">Checking sign-in options…</p>}
         {showToken && (
           <form className="grid gap-3 rounded-lg border bg-muted/40 p-4" onSubmit={submit}>
             <ol className="grid list-decimal gap-1 pl-5 text-sm">
-              <li><a href={tokenUrl} target="_blank" rel="noreferrer" className="font-medium text-todo underline underline-offset-2">Create a fine-grained token</a> on GitHub.</li>
+              <li><a href={tokenUrl} target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-4">Create a fine-grained token</a> on GitHub.</li>
               <li>Resource owner <b>{cfg.owner}</b>, repository access: only <b>{cfg.repo}</b>.</li>
               <li>Repository permissions: <b>Contents: Read and write</b>. Nothing else.</li>
               <li>Generate it and paste it here. It stays in this browser and is only sent to api.github.com.</li>
             </ol>
-            <Label>Personal access token
-              <Input type="password" autoComplete="off" spellCheck={false} value={token} onChange={(e) => setToken(e.target.value)} placeholder="github_pat_…" className="font-mono" autoFocus={!oauth} />
-            </Label>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4" /> Remember on this device</label>
-            {error && <p className="text-sm text-crit">{error}</p>}
+            <div className="grid gap-2">
+              <Label htmlFor="gh-token">Personal access token</Label>
+              <Input id="gh-token" type="password" autoComplete="off" spellCheck={false} value={token} onChange={(e) => setToken(e.target.value)} placeholder="github_pat_…" className="bg-background font-mono" autoFocus={!oauth} />
+            </div>
+            <Label className="font-normal"><Checkbox checked={remember} onCheckedChange={(c) => setRemember(c === true)} /> Remember on this device</Label>
+            {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
             <Button type="submit" className="w-fit" disabled={busy || !token.trim()}>{busy ? "Checking…" : "Sign in with token"}</Button>
           </form>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

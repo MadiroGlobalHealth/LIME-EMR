@@ -5,8 +5,11 @@ import { REG_ROWS, regValue, type FormRow, type Program } from "@/lib/model";
 import type { Need, SiteStatus } from "@/lib/types";
 import { Popover, PopoverAnchor, PopoverContent } from "./ui/popover";
 import { Button } from "./ui/button";
-import { Input, Label } from "./ui/input";
-import { Chip, StatusBadge } from "./ui/chip";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
+import { Separator } from "./ui/separator";
+import { Chip, StatusBadge } from "./chip";
 
 export interface EditRequest {
   site: string;
@@ -36,16 +39,17 @@ export function CellEditor({ req, onClose, onSignIn }: { req: EditRequest | null
     <Popover open={!!req} onOpenChange={(o) => { if (!o) { onClose(); restoreFocus(); } }}>
       <PopoverAnchor virtualRef={anchorRef as React.RefObject<HTMLElement>} />
       {req && site && (
-        <PopoverContent className="grid gap-3" onCloseAutoFocus={(e) => e.preventDefault()}>
+        <PopoverContent align="start" sideOffset={6} collisionPadding={12} className="grid gap-3 p-3" onCloseAutoFocus={(e) => e.preventDefault()}>
           <div>
             <p className="text-sm font-semibold">{req.kind === "denied" ? "Sign in to edit" : req.title}</p>
             <p className="text-xs text-muted-foreground">{site.name}</p>
           </div>
+          <Separator className="-mx-3 w-auto!" />
           {req.kind === "denied" && <Denied onSignIn={() => { onClose(); onSignIn(); }} />}
           {req.kind === "need" && (
             <div className="grid gap-0.5">
               {NEEDS.map(([need, label, st, short]) => (
-                <button key={label} className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                <button key={label} className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
                   onClick={() => { applyNeed(store, req, need); onClose(); restoreFocus(); }}>
                   <Chip state={st}>{short}</Chip>{label}
                 </button>
@@ -55,7 +59,7 @@ export function CellEditor({ req, onClose, onSignIn }: { req: EditRequest | null
           {req.kind === "status" && (
             <div className="grid gap-0.5">
               {(["live", "preparation", "planned", "closed"] as SiteStatus[]).map((st) => (
-                <button key={st} className="rounded-md px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted focus-visible:outline-none" onClick={() => { store.set(req.site, "status", st); onClose(); restoreFocus(); }}>
+                <button key={st} className="rounded-md px-2 py-1.5 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" onClick={() => { store.set(req.site, "status", st); onClose(); restoreFocus(); }}>
                   <StatusBadge status={st} />
                 </button>
               ))}
@@ -141,10 +145,10 @@ function MilestoneEditor({ req, onDone }: { req: EditRequest; onDone: () => void
   };
   return (
     <form className="grid gap-2.5" onSubmit={(e) => { e.preventDefault(); apply(); }}>
-      <Label>Date <Input autoFocus value={date} onChange={(e) => setDate(e.target.value)} placeholder="2026-11-30" className="font-mono" /></Label>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} className="size-4 accent-[var(--primary)]" /> Done</label>
-      <Label>Note <Input value={note} onChange={(e) => setNote(e.target.value)} /></Label>
-      {error && <p className="text-xs text-crit">{error}</p>}
+      <div className="grid gap-2"><Label htmlFor="ms-date">Date</Label><Input id="ms-date" autoFocus value={date} onChange={(e) => setDate(e.target.value)} placeholder="2026-11-30" className="font-mono" /></div>
+      <Label className="font-normal"><Checkbox checked={done} onCheckedChange={(c) => setDone(c === true)} /> Done</Label>
+      <div className="grid gap-2"><Label htmlFor="ms-note">Note</Label><Input id="ms-note" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2"><Button size="sm" type="submit">Apply</Button><Button size="sm" variant="outline" type="button" onClick={() => apply(true)}>Clear</Button></div>
     </form>
   );

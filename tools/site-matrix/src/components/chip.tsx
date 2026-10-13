@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { CellState } from "@/lib/types";
+import { Badge } from "./ui/badge";
 
 export const chipTone: Record<CellState, string> = {
   on: "bg-on-bg text-on",
@@ -23,11 +24,15 @@ export function Chip({ state, pending, className, ...props }: React.ComponentPro
 export function PendingDot({ className }: { className?: string }) {
   return <span aria-label="Not saved yet" className={cn("absolute -right-1 -top-1 size-2 rounded-full bg-new ring-2 ring-card", className)} />;
 }
+const statusTone: Record<string, string> = {
+  live: "border-on/30 bg-on-bg text-on",
+  preparation: "border-hold/30 bg-hold-bg text-hold",
+  planned: "border-todo/30 bg-todo-bg text-todo",
+};
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
-  const tone = status === "live" ? "bg-on-bg text-on" : status === "preparation" ? "bg-hold-bg text-hold" : status === "planned" ? "bg-todo-bg text-todo" : "bg-muted text-muted-foreground";
   return (
-    <span className={cn("inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide", tone, className)}>
+    <Badge variant="outline" className={cn("gap-1.5 capitalize", statusTone[status] || "text-muted-foreground", className)}>
       <span className="size-1.5 rounded-full bg-current" />{status}
-    </span>
+    </Badge>
   );
 }

@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Toaster } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { MatrixProvider, useMatrix } from "@/lib/store";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,9 @@ import { SignInDialog } from "@/components/sign-in-dialog";
 import { CommandMenu } from "@/components/command-menu";
 import { useUiState } from "@/components/ui-state";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Toaster } from "@/components/ui/sonner";
 
 function useTheme() {
   const [dark, setDark] = React.useState(() => document.documentElement.classList.contains("dark"));
@@ -87,10 +89,13 @@ function Shell() {
             : <Button variant="outline" onClick={() => setAdding(true)}>Add site</Button>)}
         </div>
         {store.loadError && (
-          <div role="status" className="flex items-start gap-2.5 rounded-lg border border-hold/40 bg-hold-bg px-4 py-3 text-sm text-hold">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0" /><span className="flex-1">{store.loadError}</span>
-            <Button variant="outline" size="xs" onClick={() => store.load(true)}>Try again</Button>
-          </div>
+          <Alert role="status" className="border-hold/40 bg-hold-bg text-hold">
+            <AlertTriangle />
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-2 text-hold">
+              {store.loadError}
+              <Button variant="outline" size="xs" onClick={() => store.load(true)}>Try again</Button>
+            </AlertDescription>
+          </Alert>
         )}
         <Kpis />
         <Toolbar ui={ui} />
@@ -105,7 +110,7 @@ function Shell() {
       <CommandMenu open={cmd} onOpenChange={setCmd} onSite={(id) => setSite({ id, tab: "overview" })} onForm={goToForm}
         onSignIn={() => setSignIn(true)} dark={theme.dark} onTheme={theme.toggle} onExpandAll={() => ui.expandAll(allIds)} />
       <SaveBar onReview={() => setReview(true)} onSignIn={() => setSignIn(true)} />
-      <Toaster position="bottom-center" richColors closeButton offset={96} theme={theme.dark ? "dark" : "light"} />
+      <Toaster position="bottom-center" closeButton offset={96} theme={theme.dark ? "dark" : "light"} />
     </div>
   );
 }
@@ -117,11 +122,11 @@ function AddSite({ onDone }: { onDone: (id: string | null) => void }) {
   const [error, setError] = React.useState("");
   return (
     <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); try { onDone(addSite(name.trim(), country.trim())); } catch (err) { setError((err as Error).message); } }}>
-      <input autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="Site name" className="h-9 rounded-md border bg-card px-3 text-sm" />
-      <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className="h-9 w-32 rounded-md border bg-card px-3 text-sm" />
+      <Input autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="Site name" aria-label="Site name" className="w-44" />
+      <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" aria-label="Country" className="w-32" />
       <Button type="submit">Add as planned</Button>
       <Button type="button" variant="ghost" onClick={() => onDone(null)}>Cancel</Button>
-      {error && <span className="w-full text-sm text-crit">{error}</span>}
+      {error && <span className="w-full text-sm text-destructive">{error}</span>}
     </form>
   );
 }
@@ -138,7 +143,7 @@ function Legend() {
       {item("text-hold ring-1 ring-inset ring-hold", "Remove?", "Built, marked not needed")}
       {item("text-none font-normal", "–", "Not needed")}
       {item("text-none/60 font-normal", "·", "No decision")}
-      <span className="inline-flex items-center gap-1.5"><span className="rounded border px-1 text-[9.5px] font-bold leading-[14px] text-accent">D2</span>Synced to DHIS2</span>
+      <span className="inline-flex items-center gap-1.5"><span className="rounded border px-1 text-[9.5px] font-bold leading-[14px] text-brand">D2</span>Synced to DHIS2</span>
       <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-new" />Not saved yet</span>
       <span className="ml-auto hidden lg:inline">Arrow keys move, Enter edits, ⌘K searches</span>
     </div>

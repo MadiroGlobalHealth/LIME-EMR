@@ -10,7 +10,7 @@ export function CommandMenu({ open, onOpenChange, onSite, onForm, onSignIn, dark
   const { view, lib, load, user } = useMatrix();
   const run = (fn: () => void) => () => { onOpenChange(false); fn(); };
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog open={open} onOpenChange={onOpenChange} title="Search the site matrix" description="Jump to a site, a form or an action" className="sm:max-w-xl">
       <CommandInput placeholder="Find a site, a form or an action…" />
       <CommandList>
         <CommandEmpty>Nothing found.</CommandEmpty>

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useMatrix } from "@/lib/store";
 import { daysFromToday, fmtDate, nextMilestone } from "@/lib/model";
+import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 export function Kpis() {
   const { view, lib } = useMatrix();
@@ -27,11 +28,13 @@ export function Kpis() {
   return (
     <section aria-label="Portfolio summary" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {items.map((i) => (
-        <div key={i.k} className="grid content-start gap-1 rounded-xl border bg-card p-4 shadow-xs">
-          <span className="text-xs font-medium text-muted-foreground">{i.k}</span>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums">{i.v}</span>
-          <span className="text-xs text-muted-foreground">{i.d}</span>
-        </div>
+        <Card key={i.k} className="gap-0 py-4">
+          <CardHeader className="gap-1 px-4">
+            <CardDescription className="text-xs font-medium">{i.k}</CardDescription>
+            <CardTitle className="text-2xl font-semibold tracking-tight tabular-nums">{i.v}</CardTitle>
+            <p className="text-xs text-muted-foreground">{i.d}</p>
+          </CardHeader>
+        </Card>
       ))}
     </section>
   );
