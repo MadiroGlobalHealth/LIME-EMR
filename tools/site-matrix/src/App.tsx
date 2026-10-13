@@ -3,12 +3,16 @@ import { AlertTriangle } from "lucide-react";
 import { MatrixProvider, useMatrix } from "@/lib/store";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/header";
-import { Kpis } from "@/components/kpis";
 import { Toolbar } from "@/components/toolbar";
 import { Matrix } from "@/components/matrix";
 import { CellEditor, type EditRequest } from "@/components/cell-editor";
 import { SaveBar } from "@/components/save-bar";
-import { SiteSheet } from "@/components/site-sheet";
+import { SitesHome } from "@/components/sites-home";
+import { SitePage } from "@/components/site-page";
+import { useRoute } from "@/lib/route";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReviewSheet } from "@/components/review-sheet";
 import { SignInDialog } from "@/components/sign-in-dialog";
 import { CommandMenu } from "@/components/command-menu";
@@ -46,8 +50,8 @@ function Shell() {
   const store = useMatrix();
   const ui = useUiState();
   const theme = useTheme();
+  const { route, go } = useRoute();
   const [edit, setEdit] = React.useState<EditRequest | null>(null);
-  const [site, setSite] = React.useState<{ id: string; tab: string } | null>(null);
   const [review, setReview] = React.useState(false);
   const [signIn, setSignIn] = React.useState(false);
   const [cmd, setCmd] = React.useState(false);
@@ -63,31 +67,27 @@ function Shell() {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [store.pending]);
+  const pageKey = route.page === "site" ? `site:${route.id}` : route.page;
+  React.useEffect(() => { window.scrollTo({ top: 0 }); }, [pageKey]);
 
+  const openSite = (id: string, tab = "overview") => go({ page: "site", id, tab });
   const allIds = ["sec:time", "sec:reg", "sec:mods", "sec:int", "sec:forms", ...store.view.programs.map((p) => `prog:${p.name}`)];
   const goToForm = (program: string, code: string) => {
+    go({ page: "compare" });
     ui.setExpanded((e) => ({ ...e, "sec:forms": true, [`prog:${program}`]: true }));
     ui.setOnlyUsed(false);
     setTimeout(() => {
       const row = [...document.querySelectorAll<HTMLElement>("[data-testid=matrix] tbody tr")].find((tr) => tr.textContent?.includes(code));
       row?.scrollIntoView({ block: "center", behavior: "smooth" });
       row?.querySelector<HTMLElement>("td")?.focus();
-    }, 60);
+    }, 120);
   };
 
   return (
     <div className="min-h-dvh pb-28">
-      <Header onSearch={() => setCmd(true)} onSignIn={() => setSignIn(true)} dark={theme.dark} onTheme={theme.toggle} />
-      <main className="mx-auto grid max-w-[1680px] gap-5 px-4 py-6 sm:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="grid max-w-3xl gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Site Matrix</h1>
-            <p className="text-sm text-muted-foreground">What each LIME EMR site runs today, read from the repo, and what each site needs. Click any value to change it; saving commits the site profile to GitHub under your name.</p>
-          </div>
-          {store.canEdit && (adding
-            ? <AddSite onDone={(id) => { setAdding(false); if (id) setSite({ id, tab: "overview" }); }} />
-            : <Button variant="outline" onClick={() => setAdding(true)}>Add site</Button>)}
-        </div>
+      <Header page={route.page} onHome={() => go({ page: "home" })} onCompare={() => go({ page: "compare" })}
+        onSearch={() => setCmd(true)} onSignIn={() => setSignIn(true)} dark={theme.dark} onTheme={theme.toggle} />
+      <main className={cn("mx-auto grid gap-5 px-4 py-6 sm:px-6", route.page === "compare" ? "max-w-[1680px]" : "max-w-6xl")}>
         {store.loadError && (
           <Alert role="status" className="border-hold/40 bg-hold-bg text-hold">
             <AlertTriangle />
@@ -97,37 +97,66 @@ function Shell() {
             </AlertDescription>
           </Alert>
         )}
-        <Kpis />
-        <Toolbar ui={ui} />
-        <Legend />
-        <Matrix ui={ui} onEdit={setEdit} onOpenSite={(id) => setSite({ id, tab: "overview" })} />
-        <p className="text-xs text-muted-foreground">"On" comes from each site's build (pom.xml, configs, OpenFn project). Everything else is a decision stored in <code className="font-mono">{store.cfg.dir}/&lt;site&gt;.md</code>. Reuse = shared library forms ÷ all forms on or needed at the site.</p>
+        {route.page === "home" && <SitesHome onOpen={(id) => openSite(id)} onCompare={() => go({ page: "compare" })} onAdd={() => setAdding(true)} />}
+        {route.page === "site" && (
+          <SitePage id={route.id} tab={route.tab} onTab={(tab) => go({ page: "site", id: route.id, tab })} onBack={() => go({ page: "home" })} onSignIn={() => setSignIn(true)} />
+        )}
+        {route.page === "compare" && (
+          <>
+            <div className="grid max-w-3xl gap-1">
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Compare sites</h1>
+              <p className="text-muted-foreground">All sites side by side. Open a row to see details; click a value to change it, or click a site name to open its page.</p>
+            </div>
+            <Toolbar ui={ui} />
+            <Legend />
+            <Matrix ui={ui} onEdit={setEdit} onOpenSite={(id) => openSite(id)} />
+            <p className="text-xs text-muted-foreground">"On" comes from each site's setup in the repository (pom.xml, configs, OpenFn project). Everything else is a decision stored in <code className="font-mono">{store.cfg.dir}/&lt;site&gt;.md</code>.</p>
+          </>
+        )}
+        <DataSource />
       </main>
       <CellEditor req={edit} onClose={() => setEdit(null)} onSignIn={() => setSignIn(true)} />
-      <SiteSheet siteId={site?.id || null} tab={site?.tab || "overview"} onTab={(tab) => setSite((s) => (s ? { ...s, tab } : s))} onClose={() => setSite(null)} />
+      <AddSiteDialog open={adding} onOpenChange={setAdding} onAdded={(id) => openSite(id)} />
       <ReviewSheet open={review} onOpenChange={setReview} />
       <SignInDialog open={signIn} onOpenChange={setSignIn} />
-      <CommandMenu open={cmd} onOpenChange={setCmd} onSite={(id) => setSite({ id, tab: "overview" })} onForm={goToForm}
-        onSignIn={() => setSignIn(true)} dark={theme.dark} onTheme={theme.toggle} onExpandAll={() => ui.expandAll(allIds)} />
+      <CommandMenu open={cmd} onOpenChange={setCmd} onSite={(id) => openSite(id)} onForm={goToForm}
+        onSignIn={() => setSignIn(true)} dark={theme.dark} onTheme={theme.toggle} onExpandAll={() => { go({ page: "compare" }); ui.expandAll(allIds); }} />
       <SaveBar onReview={() => setReview(true)} onSignIn={() => setSignIn(true)} />
       <Toaster position="bottom-center" closeButton offset={96} theme={theme.dark ? "dark" : "light"} />
     </div>
   );
 }
 
-function AddSite({ onDone }: { onDone: (id: string | null) => void }) {
+function DataSource() {
+  const { source, cfg, snapshot } = useMatrix();
+  return (
+    <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+      <span className={cn("size-2 rounded-full", source === "github" ? "bg-on" : source === "loading" ? "animate-pulse bg-hold" : "bg-none")} />
+      {source === "github" ? <>Up to date with GitHub ({cfg.owner}/{cfg.repo}, branch {cfg.branch}).</> : source === "loading" ? "Loading from GitHub…" : <>Saved copy from {snapshot.built_at.slice(0, 10)}; GitHub could not be reached.</>}
+    </p>
+  );
+}
+
+function AddSiteDialog({ open, onOpenChange, onAdded }: { open: boolean; onOpenChange: (o: boolean) => void; onAdded: (id: string) => void }) {
   const { addSite } = useMatrix();
   const [name, setName] = React.useState("");
   const [country, setCountry] = React.useState("");
   const [error, setError] = React.useState("");
   return (
-    <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); try { onDone(addSite(name.trim(), country.trim())); } catch (err) { setError((err as Error).message); } }}>
-      <Input autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="Site name" aria-label="Site name" className="w-44" />
-      <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" aria-label="Country" className="w-32" />
-      <Button type="submit">Add as planned</Button>
-      <Button type="button" variant="ghost" onClick={() => onDone(null)}>Cancel</Button>
-      {error && <span className="w-full text-sm text-destructive">{error}</span>}
-    </form>
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setName(""); setCountry(""); setError(""); } }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add a site</DialogTitle>
+          <DialogDescription>It starts as Planned. Fill in its details on the next page, then save.</DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); try { const id = addSite(name.trim(), country.trim()); onOpenChange(false); setName(""); setCountry(""); onAdded(id); } catch (err) { setError((err as Error).message); } }}>
+          <div className="grid gap-1.5"><Label htmlFor="new-name">Site name</Label><Input id="new-name" autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mombasa" /></div>
+          <div className="grid gap-1.5"><Label htmlFor="new-country">Country</Label><Input id="new-country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g. Kenya" /></div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" className="w-fit">Add site</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

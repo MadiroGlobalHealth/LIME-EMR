@@ -1,7 +1,7 @@
 // End-to-end check of the built app against a simulated GitHub API.
 //   npm run build && npx vite preview --port 4173 &
 //   node tests/e2e.mjs            (PLAYWRIGHT=/path/to/playwright if not installed locally)
-// Covers: anonymous live load, token sign-in (bad then good), editing a status, an ID prefix,
+// Covers: home cards, site page editing, anonymous live load, token sign-in (bad then good), editing a status, an ID prefix,
 // a milestone and a form need, saving (one commit per site), commit history, ⌘K and CSV export.
 import { createRequire } from "node:module";
 import { readdirSync, readFileSync } from "node:fs";
@@ -60,7 +60,10 @@ await page.goto(URL_);
 await page.getByText(/claude\/|main/).first().waitFor({ timeout: 10000 }).catch(() => {});
 await page.waitForTimeout(800);
 if (SHOTS) await page.screenshot({ path: `${SHOTS}/e1.png` });
-check(await page.locator("thead th").count() === 10, "9 site columns loaded live");
+check(await page.locator("[data-testid=site-cards] > *").count() === 9, "home shows 9 site cards");
+await page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name: "Compare" }).click();
+await page.locator("thead th").first().waitFor();
+check(await page.locator("thead th").count() === 10, "compare view: 9 site columns loaded live");
 
 // Clicking a cell while signed out offers sign-in.
 const regRow = page.locator("tbody tr", { hasText: "Registration & patient ID" });
@@ -84,7 +87,7 @@ await page.getByRole("textbox", { name: "MSF ID prefix" }).fill("KE-MBA-");
 await page.getByRole("button", { name: "Apply" }).click();
 
 await page.getByLabel(/Status of Mombasa/).click();
-await page.getByRole("button", { name: "live", exact: true }).click();
+await page.getByRole("button", { name: "Live", exact: true }).click();
 
 await page.locator("tbody tr", { hasText: "Status & milestones" }).locator("td").first().click();
 await page.locator("tbody tr", { hasText: "Production target" }).locator("td").nth(5).click();
@@ -107,7 +110,7 @@ check(await page.getByText("No decision (use the repo state)").isVisible(), "arr
 await page.keyboard.press("Escape");
 
 await page.getByLabel("Commit note").fill("Agreed in the weekly LIME call");
-await page.getByRole("button", { name: "Save to GitHub" }).click();
+await page.getByRole("button", { name: "Save changes" }).click();
 await page.getByText(/Committed to/).waitFor({ timeout: 8000 });
 check(commits.length === 2, `2 commits (one per site): ${commits.map((c) => c.message.split("\n")[0]).join(" | ")}`);
 const diff = (p) => { const a = original[p].split("\n"), b = store[p].split("\n"); return { add: b.filter((l) => !a.includes(l)), del: a.filter((l) => !b.includes(l)) }; };
@@ -118,8 +121,8 @@ check(commits.every((c) => c.message.includes("Agreed in the weekly LIME call"))
 // History tab
 await page.getByRole("button", { name: /^Bunia/ }).click();
 await page.getByRole("tab", { name: "History" }).click();
-await page.getByText("site-matrix(bunia): F35 MH PHQ-9: Needed").waitFor({ timeout: 5000 });
-check(true, "history tab lists the new commit by @pius-n");
+await page.getByText("F35 MH PHQ-9: Needed").waitFor({ timeout: 5000 });
+check(await page.getByText("@pius-n").first().isVisible(), "site page history lists the new commit by @pius-n");
 if (SHOTS) await page.screenshot({ path: `${SHOTS}/e3.png` });
 await page.keyboard.press("Escape");
 
@@ -127,14 +130,30 @@ await page.keyboard.press("Escape");
 await page.keyboard.press("Control+k");
 await page.getByPlaceholder("Find a site, a form or an action…").fill("homs");
 await page.keyboard.press("Enter");
-check(await page.getByRole("dialog").getByText("Homs").first().isVisible(), "⌘K opens a site");
-await page.keyboard.press("Escape");
+check(await page.getByRole("heading", { name: "Homs", level: 1 }).waitFor({ timeout: 5000 }).then(() => true, () => false), "⌘K opens a site page");
+
+// Site page: edit the patient ID prefix and a form need in plain controls.
+await page.getByRole("button", { name: "LIME EMR sites, home" }).click();
+await page.getByRole("button", { name: "Mombasa", exact: true }).click();
+await page.getByRole("heading", { name: "Mombasa", level: 1 }).waitFor();
+await page.getByLabel("MSF ID prefix").fill("KE-MSA-");
+await page.getByLabel("MSF ID prefix").press("Enter");
+await page.getByRole("tab", { name: "Forms" }).click();
+await page.getByRole("radio", { name: "All forms" }).click();
+await page.getByRole("button", { name: /^Antenatal Care/ }).click().catch(() => {});
+const toggle = page.getByRole("radio", { name: /: Needed$/ }).and(page.locator("[data-state=off]")).first();
+await toggle.click();
+check(await page.getByText("2 unsaved changes").first().isVisible(), "site page: prefix and form need become 2 unsaved changes");
+if (SHOTS) await page.screenshot({ path: `${SHOTS}/e5.png`, fullPage: false });
+await page.getByRole("button", { name: "Discard" }).click();
+await page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name: "Compare" }).click();
 
 const dl = page.waitForEvent("download");
 await page.getByRole("button", { name: "Export CSV" }).click();
 const file = await dl;
 check(/lime-site-matrix-.*\.csv/.test(file.suggestedFilename()), `CSV export: ${file.suggestedFilename()}`);
 
+await page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name: "Sites" }).click();
 await page.emulateMedia({ colorScheme: "dark" });
 await page.setViewportSize({ width: 400, height: 860 });
 await page.waitForTimeout(300);

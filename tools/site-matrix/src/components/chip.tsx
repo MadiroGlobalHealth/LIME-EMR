@@ -24,6 +24,7 @@ export function Chip({ state, pending, className, ...props }: React.ComponentPro
 export function PendingDot({ className }: { className?: string }) {
   return <span aria-label="Not saved yet" className={cn("absolute -right-1 -top-1 size-2 rounded-full bg-new ring-2 ring-card", className)} />;
 }
+export const STATUS_LABEL: Record<string, string> = { live: "Live", preparation: "Preparing", planned: "Planned", closed: "Closed" };
 const statusTone: Record<string, string> = {
   live: "border-on/30 bg-on-bg text-on",
   preparation: "border-hold/30 bg-hold-bg text-hold",
@@ -31,8 +32,8 @@ const statusTone: Record<string, string> = {
 };
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
   return (
-    <Badge variant="outline" className={cn("gap-1.5 capitalize", statusTone[status] || "text-muted-foreground", className)}>
-      <span className="size-1.5 rounded-full bg-current" />{status}
+    <Badge variant="outline" className={cn("gap-1.5", statusTone[status] || "text-muted-foreground", className)}>
+      <span className="size-1.5 rounded-full bg-current" />{STATUS_LABEL[status] || status}
     </Badge>
   );
 }

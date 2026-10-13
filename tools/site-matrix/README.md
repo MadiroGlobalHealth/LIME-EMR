@@ -11,6 +11,11 @@ neutral theme) on Radix, TanStack Table, cmdk (⌘K search), sonner (notificatio
 
 ## How it works
 
+- **Sites** (home): one card per site with its status, next date, forms ready, patient ID prefix and
+  DHIS2 reporting. Opening a site shows a page with plain controls: dates and status, patient ID and
+  registration, DHIS2, notes (Overview), then Forms, Modules and History. Each form and module is
+  answered with Needed / Not needed / Later. Links to a site can be shared (`#/site/<id>`).
+- **Compare** (`#/compare`): every site side by side, with the same data, for the implementation team.
 - On load it reads every profile live from GitHub (`api.github.com`). The repository is public, so
   reading needs no sign-in. If GitHub cannot be reached, it shows `src/snapshot.json`, written by
   `scripts/site-profiles/build.py`.
