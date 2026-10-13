@@ -31,7 +31,7 @@ from profiles import ROOT, SITES_FILE, load_doc, save_doc  # noqa: E402
 DISTRO = os.path.join(ROOT, "distro", "configs")
 INIT = os.path.join("configs", "openmrs", "initializer_config")
 MSF_ID_TYPE = "05a29f94-c0ed-11e2-94be-8c13b969e334"
-FORM_CODE = re.compile(r"\b(F\d{2})[-_ ]")
+FORM_CODE = re.compile(r"\b(F\d{2,3})[-_ ]")
 CORE_FIELDS = {"name", "gender", "dob", "id", "address"}
 ADDRESS_LABELS = {
     "country": "Country", "stateProvince": "State/Province", "countyDistrict": "District",
@@ -61,7 +61,7 @@ def git_commit():
 
 def expand_codes(codes):
     """Collapse sorted F-codes into ranges: F29,F30,F31 -> F29-F31."""
-    nums = sorted({int(c[1:]) for c in codes if re.fullmatch(r"F\d{2}", c)})
+    nums = sorted({int(c[1:]) for c in codes if re.fullmatch(r"F\d{2,3}", c)})
     head = ["F00"] if "F00" in codes else []
     nums = [n for n in nums if n]
     out, start = head, None
@@ -79,7 +79,7 @@ def expand_codes(codes):
 def distro_forms():
     forms = {}
     for f in sorted(glob.glob(os.path.join(DISTRO, "openmrs", "initializer_config", "ampathforms", "*.json"))):
-        m = re.match(r"(F\d{2})-", os.path.basename(f))
+        m = re.match(r"(F\d{2,3})-", os.path.basename(f))
         if not m:
             continue
         try:
@@ -91,11 +91,11 @@ def distro_forms():
 
 
 def site_forms(pom_text, all_forms):
-    includes = re.findall(r"<include>[^<]*ampathforms/[^<]*?/(F\d{2})[^<]*\.json</include>", pom_text)
+    includes = re.findall(r"<include>[^<]*ampathforms/[^<]*?/(F\d{2,3})-[^<]*\.json</include>", pom_text)
     excludes_all = re.search(r"<exclude>[^<]*ampathforms/\*\*/\*\.\*</exclude>", pom_text)
     if excludes_all:
         return sorted(set(includes))
-    excluded = set(re.findall(r"<exclude>[^<]*ampathforms/[^<]*?/(F\d{2})[^<]*\.json</exclude>", pom_text))
+    excluded = set(re.findall(r"<exclude>[^<]*ampathforms/[^<]*?/(F\d{2,3})-[^<]*\.json</exclude>", pom_text))
     return sorted(set(all_forms) - excluded)
 
 
@@ -237,7 +237,7 @@ def openfn(site_dir, yaml_hashes):
     if os.path.exists(staging):
         txt = open(staging, encoding="utf-8").read()
         info["staging_config"] = rel(staging)
-        info["staging_forms"] = expand_codes(re.findall(r"\b(F\d{2})-[A-Z]", txt))
+        info["staging_forms"] = expand_codes(re.findall(r"\b(F\d{2,3})-[A-Z]", txt))
 
     any_on = any(w["enabled"] for w in workflows)
     info["status"] = "live" if any_on else "template"
@@ -263,6 +263,10 @@ def sync_catalog(doc, all_forms):
     missing = [c for c in sorted(all_forms) if c not in known]
     forms += [{"code": c, "name": all_forms[c]["name"] or c, "program": "Unassigned"} for c in missing]
     return missing
+
+
+def facts(detected):
+    return {k: v for k, v in detected.items() if k not in ("generated_at", "source_commit")}
 
 
 def main(argv):
@@ -293,9 +297,14 @@ def main(argv):
         created = sid not in doc["sites"]
         if created:
             doc["sites"][sid] = {"name": sid.capitalize(), "country": None, "status": "live", "phase": None}
-        doc["sites"][sid]["detected"] = detected
+        # Keep the old block (and its timestamps) when nothing changed, so a refresh only
+        # touches the sites whose setup changed.
+        old = doc["sites"][sid].get("detected") or {}
+        changed = facts(old) != facts(detected)
+        if changed:
+            doc["sites"][sid]["detected"] = detected
         print("%s %s: %d forms, %d modules, integration %s" % (
-            "added" if created else "updated", sid,
+            "added" if created else "updated" if changed else "unchanged", sid,
             len(site_forms(pom, all_forms)), len(mods),
             detected["integration"]["status"] if detected["integration"] else "none"))
     save_doc(doc)

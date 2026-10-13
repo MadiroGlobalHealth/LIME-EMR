@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { applyPending, parseDoc, renderDoc } from "../src/lib/profile";
+import { applyPending, expandCodes, parseDoc, renderDoc } from "../src/lib/profile";
 import { buildView, cellState, commitMessage } from "../src/lib/model";
 import { problems } from "../src/lib/validate";
 
@@ -58,6 +58,13 @@ describe("sites.yaml written by the app matches the Python writer", () => {
 describe("sites.yaml is checked against its schema", () => {
   it("the file in the repo is valid", () => {
     expect(problems(fresh().doc)).toEqual([]);
+  });
+  it("accepts three-digit form codes once they are in the catalog", () => {
+    const { doc } = fresh();
+    doc.catalog!.forms.push({ code: "F100", name: "Form one hundred", program: "Unassigned" });
+    applyPending(doc, { mombasa: { "needs.forms.F100": "needed" } });
+    expect(problems(doc)).toEqual([]);
+    expect(expandCodes(["F98-F101"])).toEqual(["F98", "F99", "F100", "F101"]);
   });
   it("catches typos, bad dates and unknown forms", () => {
     const { doc } = fresh();

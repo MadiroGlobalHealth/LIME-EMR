@@ -18,6 +18,8 @@ neutral theme) on Radix, TanStack Table, cmdk (⌘K search), sonner (notificatio
 - On load it reads `docs/site-matrix/sites.yaml` live from GitHub (`api.github.com`). The repository
   is public, so reading needs no sign-in. If GitHub cannot be reached, it shows `src/snapshot.json`
   (a copy of the file written by `scripts/site-profiles/build.py`).
+- Signed-out visitors share GitHub's hourly API limit per network (60 requests). Past it, the app
+  reads the file from raw.githubusercontent.com instead, which may be a few minutes behind.
 - To edit, people sign in with GitHub. Saving writes one commit with every change, titled
   `site-matrix(<site ids>): ...`, listing each change and the optional "why" note. Right before
   writing, the app reads the file again and applies the changes to that version, so someone else

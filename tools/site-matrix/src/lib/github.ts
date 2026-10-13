@@ -46,9 +46,18 @@ export function createGitHub(cfg: RepoConfig, getToken: () => string | null) {
   }
 
   return {
-    async read(path: string) {
-      const d = await req<{ sha: string; content: string }>("GET", `${api}/contents/${enc(path)}?ref=${ref}`);
-      return { sha: d.sha, text: b64decode(d.content || "") };
+    async read(path: string): Promise<{ sha: string | null; text: string }> {
+      try {
+        const d = await req<{ sha: string; content: string }>("GET", `${api}/contents/${enc(path)}?ref=${ref}`);
+        return { sha: d.sha, text: b64decode(d.content || "") };
+      } catch (e) {
+        // Signed-out visitors share GitHub's hourly API limit per network. Past it, read the file
+        // from GitHub's file server instead (not limited, but cached for a few minutes).
+        if (getToken() || !(e instanceof GitHubError) || (e.status !== 403 && e.status !== 429)) throw e;
+        const res = await fetch(`https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/${enc(cfg.branch)}/${enc(path)}`).catch(() => null);
+        if (!res?.ok) throw e;
+        return { sha: null, text: await res.text() };
+      }
     },
     async list(dir: string) {
       const d = await req<{ name: string; type: string }[]>("GET", `${api}/contents/${enc(dir)}?ref=${ref}`);
@@ -60,8 +69,8 @@ export function createGitHub(cfg: RepoConfig, getToken: () => string | null) {
       const d = await req<{ commit?: { sha?: string; html_url?: string } }>("PUT", `${api}/contents/${enc(path)}`, body);
       return { sha: d.commit?.sha || null, url: d.commit?.html_url || null };
     },
-    commits(path: string, n = 20) {
-      return req<Commit[]>("GET", `${api}/commits?sha=${ref}&path=${encodeURIComponent(path)}&per_page=${n}`);
+    commits(path: string, n = 20, page = 1) {
+      return req<Commit[]>("GET", `${api}/commits?sha=${ref}&path=${encodeURIComponent(path)}&per_page=${n}&page=${page}`);
     },
     async me() {
       return req<{ login: string; name?: string; avatar_url?: string }>("GET", "https://api.github.com/user");

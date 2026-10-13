@@ -447,6 +447,9 @@ function CopyFromSite({ s }: { s: SiteView }) {
 
 // ---------------------------------------------------------------- history
 
+const HISTORY_SIZE = 30;
+const HISTORY_PAGES = 5;
+
 function History({ s }: { s: SiteView }) {
   const { gh, cfg } = useMatrix();
   const [state, setState] = React.useState<{ loading: boolean; error?: string; items: Commit[] }>({ loading: true, items: [] });
@@ -455,13 +458,23 @@ function History({ s }: { s: SiteView }) {
     // Saves to sites.yaml name the sites in the title: "site-matrix(mombasa,bunia): ...".
     // Older changes were made to one file per site (docs/site-matrix/profiles/<id>.md).
     const mine = (c: Commit) => (/^site-matrix\(([^)]*)\)/.exec(c.commit.message)?.[1] || "").split(",").includes(s.id);
+    // Page back through the shared file's history until enough of this site's changes are found.
+    const ofSite = async () => {
+      const found: Commit[] = [];
+      for (let page = 1; page <= HISTORY_PAGES && found.length < HISTORY_SIZE; page++) {
+        const list = await gh.commits(cfg.file, 100, page);
+        found.push(...list.filter(mine));
+        if (list.length < 100) break;
+      }
+      return found;
+    };
     Promise.all([
-      gh.commits(cfg.file, 100).then((list) => list.filter(mine)),
+      ofSite(),
       gh.commits(`docs/site-matrix/profiles/${s.id}.md`, 25).catch(() => [] as Commit[]),
     ]).then(([a, b]) => {
       const seen = new Set<string>();
       const items = [...a, ...b].filter((c) => !seen.has(c.sha) && seen.add(c.sha))
-        .sort((x, y) => (y.commit.author?.date || "").localeCompare(x.commit.author?.date || "")).slice(0, 30);
+        .sort((x, y) => (y.commit.author?.date || "").localeCompare(x.commit.author?.date || "")).slice(0, HISTORY_SIZE);
       if (live) setState({ loading: false, items });
     }, (e) => live && setState({ loading: false, items: [], error: explain(e, cfg) }));
     return () => { live = false; };

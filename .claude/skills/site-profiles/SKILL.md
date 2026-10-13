@@ -27,7 +27,9 @@ requirements list that is exhaustive (anything not listed is out of scope).
 `docs/site-matrix/sites.schema.json` (JSON Schema) defines what is allowed: status and need
 values, date formats (`YYYY-MM-DD`, `YYYY-MM`, `YYYY`), known keys, and form codes `F00`. The app
 refuses to save, and the scripts refuse to write, a file that breaks it or that references forms or
-modules missing from `catalog`. Run `validate.py` after any hand or AI edit.
+modules missing from `catalog`. Run `validate.py` after any hand or AI edit. The "Site matrix"
+GitHub workflow runs the same check, the layout check below, and the app's tests and build on every
+PR that touches the file, the scripts or the app.
 
 The file is written by both the app (js-yaml) and the scripts (PyYAML, `scripts/site-profiles/profiles.py`),
 which produce identical bytes. When editing it by hand, keep the same layout (2-space indent,
@@ -45,7 +47,9 @@ python3 scripts/site-profiles/build.py [--branch B]   # refresh the app's offlin
 
 ## 1. Refresh from the repo
 
-1. `python3 scripts/site-profiles/extract.py`, then `python3 scripts/site-profiles/build.py`.
+1. `python3 scripts/site-profiles/extract.py`, then `python3 scripts/site-profiles/build.py`. Sites
+   whose setup did not change keep their `detected` block as is (timestamps included), so the diff
+   only shows real changes.
 2. Read `git diff docs/site-matrix/sites.yaml` and report what changed in plain words (forms added
    or removed per site, modules, ID prefix, OpenFn version or workflow state). Flag anything
    surprising, for example an OpenFn project with `identical_to` (a copied config) or every trigger
