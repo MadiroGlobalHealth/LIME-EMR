@@ -13,7 +13,7 @@ Accept any of: a Jira key (`LIME2-123`, read it with the Jira tools if connected
 
 ## Steps
 
-1. **Read the template and the example first**: `docs/testing/modele-cas-de-test.md` and `docs/testing/exemples/REQ-MH-PHQ9-001.md`. Follow their format and ID scheme exactly (`REQ-<MODULE>-<SUBJECT>-<NNN>`, `TC-<MODULE>-<SUBJECT>-<NNN>`). Check `docs/testing/cas-de-test/` for existing IDs so you do not reuse one.
+1. **Read the example first**: `docs/testing/exemples/REQ-MH-PHQ9-001.md`. MSF writes requirements in the simple four-column format of `docs/testing/modele-cas-de-test.md` (Quoi ? / Pour qui ? / Si je fais... / Je dois voir...). Your job is to expand that into the detailed format below. Check `docs/testing/cas-de-test/` for existing IDs so you do not reuse one.
 2. **Ground every rule in the configuration**. Never invent labels, thresholds or roles. Look them up:
    - Forms: `distro/configs/openmrs/initializer_config/ampathforms/*.json` and `sites/<site>/configs/openmrs/initializer_config/ampathforms/` (question `id`, `label`, `required`, `hide.hideWhenExpression`, `questionOptions.answers`, `calculate.calculateExpression`, `validators`, `min`/`max`).
    - Translations: `.../ampathformstranslations/<form>_translations_<lang>.json` (use the exact displayed label in the user's language).
@@ -22,13 +22,30 @@ Accept any of: a Jira key (`LIME2-123`, read it with the Jira tools if connected
    - Frontend behaviour: `distro/configs/openmrs/frontend_config/` and `sites/<site>/configs/openmrs/frontend_config/`.
    - Site overrides win over the distro: always say which site a case applies to.
 3. **Derive cases from each rule**: one nominal case, every boundary (each threshold on both sides, empty, max), at least one negative case (refused, hidden, forbidden). For skip logic: one case where the field shows, one where it hides. For roles: one allowed role, one denied role.
-4. **Pick the lowest level that proves the rule** and say it in the `Niveau` field:
+4. **Pick the lowest level that proves the rule** and put it in the Level column:
    - *Configuration*: arithmetic, JSON structure, translations, role inheritance. Runs in seconds, no server.
    - *API*: REST/FHIR responses, privileges (403 vs 200), OpenFn outputs.
    - *Interface*: what the user actually sees and clicks.
-   - *Manuel*: only when automation costs more than it saves (printing, hardware, judgement calls).
-5. **Report gaps and contradictions** in a final "Questions ouvertes" section: rules the config does not enforce (not required, not read-only, severity not derived from score), labels missing a translation, behaviour that differs between sites. These are often the most valuable output.
-6. **Write the file** to `docs/testing/cas-de-test/<REQ-ID>.md`. Write in French unless asked otherwise (MSF team language), keep IDs, code and file names in English.
+   - *Manual*: only when automation costs more than it saves (printing, hardware, judgement calls).
+5. **Report gaps and contradictions** as open questions at the top of the file, in plain French for MSF: rules the config does not enforce (not required, not read-only, severity not derived from score), labels missing a translation, behaviour that differs between sites. These are often the most valuable output.
+6. **Write the file** to `docs/testing/cas-de-test/<REQ-ID>.md` in two parts, like the example:
+   - **Top, for MSF**: the requirement in the simple four-column table, plain French, no IDs or jargon, then the open questions. A clinician must be able to read it in one minute.
+   - **Bottom, in a `<details>` block for the team**: the detailed test cases below.
+
+## Detailed test case format (team part)
+
+Requirement: ID `REQ-<MODULE>-<SUBJECT>-<NNN>`, title, site(s), source (Jira key, protocol), numbered business rules.
+
+One table row per test case:
+
+| Column | Content |
+|---|---|
+| ID | `TC-<MODULE>-<SUBJECT>-<NNN>` |
+| Check | one observable expected result |
+| Type | Nominal / Boundary / Negative |
+| Level | Configuration / API / Interface / Manual |
+| Preconditions and data | role, site, language, patient state, exact values |
+| Test | path of the automated test, or "to write" |
 
 ## Rules
 

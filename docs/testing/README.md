@@ -21,9 +21,9 @@ Push every check down to the lowest level that can prove it. Most form logic (sc
 
 ## 2. Writing test cases
 
-- Template (French, for the MSF team): [modele-cas-de-test.md](modele-cas-de-test.md)
-- Worked example: [exemples/REQ-MH-PHQ9-001.md](exemples/REQ-MH-PHQ9-001.md) (PHQ-9 score, plus a short access-rights example)
-- New cases go in `docs/testing/cas-de-test/<REQ-ID>.md`.
+- MSF describes needs in a simple four-column table (what, for whom, if I do, I must see): [modele-cas-de-test.md](modele-cas-de-test.md), in French.
+- The team (with the `lime-test-case` skill) expands each need into numbered test cases, kept in a collapsed section at the bottom of the same file.
+- Worked example: [exemples/REQ-MH-PHQ9-001.md](exemples/REQ-MH-PHQ9-001.md). New ones go in `docs/testing/cas-de-test/<REQ-ID>.md`.
 
 IDs: `REQ-<MODULE>-<SUBJECT>-<NNN>` for requirements, `TC-<MODULE>-<SUBJECT>-<NNN>` for test cases.
 
