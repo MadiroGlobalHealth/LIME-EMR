@@ -1,6 +1,8 @@
 # Exemple : score PHQ-9
 
-## Ce que l'équipe MSF nous envoie
+## Ce que l'équipe MSF écrit dans le classeur de métadonnées
+
+Les lignes de calcul vont dans les colonnes « Test - If I do... / Test - I should see... » de l'onglet F35, les autres dans l'onglet « Test Scenarios ».
 
 | Quoi ? | Pour qui ? | Si je fais... | Je dois voir... |
 |---|---|---|---|

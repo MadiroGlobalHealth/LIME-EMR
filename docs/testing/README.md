@@ -21,11 +21,8 @@ Push every check down to the lowest level that can prove it. Most form logic (sc
 
 ## 2. Writing test cases
 
-- **Per form, from the MSF metadata workbook** (preferred, nothing new for MSF to fill): `scripts/metadata-check.py` turns each rule in a form tab (Skip logic, Mandatory, limits) into test cases and checks them against the form JSON. See [metadonnees/](metadonnees/README.md).
-- **Per form without a metadata tab**: `scripts/form-test-sheet.py` generates an Excel review sheet pre-filled from the form JSON (questions, answers, mandatory, skip logic in plain French, limits). MSF marks each line correct or not and adds scenarios. See [fiches/](fiches/README.md).
-- For anything else, MSF describes needs in a simple four-column table (what, for whom, if I do, I must see): [modele-cas-de-test.md](modele-cas-de-test.md), in French.
-- The team (with the `lime-test-case` skill) expands each need into numbered test cases, kept in a collapsed section at the bottom of the same file.
-- Worked example: [exemples/REQ-MH-PHQ9-001.md](exemples/REQ-MH-PHQ9-001.md). New ones go in `docs/testing/cas-de-test/<REQ-ID>.md`.
+- **Everything starts from the MSF metadata workbook**, which MSF already maintains (no new spreadsheet): `scripts/metadata-check.py` turns each rule in a form tab (Skip logic, Mandatory, limits) into test cases and checks them against the form JSON. MSF can add tests in two optional columns at the end of a form tab and in a `Test Scenarios` tab; results go into their existing `Form QA Tracker`. See [metadonnees/](metadonnees/README.md).
+- Detailed test case files for the team: `docs/testing/cas-de-test/<REQ-ID>.md`, see the [PHQ-9 example](exemples/REQ-MH-PHQ9-001.md).
 
 IDs: `REQ-<MODULE>-<SUBJECT>-<NNN>` for requirements, `TC-<MODULE>-<SUBJECT>-<NNN>` for test cases.
 

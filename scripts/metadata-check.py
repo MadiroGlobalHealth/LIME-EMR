@@ -4,40 +4,44 @@
 The metadata workbook (one tab per form, with Skip logic, Mandatory, Lower
 limit, Upper limit and Question ID columns) is the specification MSF already
 maintains. This script reads a form tab, compares every rule with the form
-JSON in this repository, and writes the test cases those rules imply, in plain
-language, each marked as matching the configuration or not. MSF fills in
-nothing new.
+JSON in this repository, and lists the test cases those rules imply, in plain
+language, each marked as matching the configuration or not.
+
+Two optional additions to the workbook are read when present (see
+docs/testing/metadonnees/README.md): the "Test - If I do..." and
+"Test - I should see..." columns at the end of a form tab, and a
+"Test Scenarios" tab. Nothing is written back to the workbook.
 
 Usage:
-  python3 scripts/metadata-check.py <metadata.xlsx> --form "F17-Surgery Admission" [--out cases.xlsx]
+  python3 scripts/metadata-check.py <metadata.xlsx> --form "F17-Surgery Admission" [--out report.md]
   python3 scripts/metadata-check.py <metadata.xlsx> --all [--out summary.md]
 """
 import argparse
+import datetime
 import glob
-import importlib.util
 import os
 import re
 import sys
 import warnings
 
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl import load_workbook
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-_spec = importlib.util.spec_from_file_location("form_test_sheet", os.path.join(HERE, "form-test-sheet.py"))
-fts = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(fts)
+sys.path.insert(0, HERE)
+import lime_forms as fts  # noqa: E402
 
 # Metadata tab columns (0-based), header on row 2.
 COLUMNS = {"num": "Question #", "question": "Question", "label": "Label if different", "lower": "Lower limit", "upper": "Upper limit",
-           "skip": "Skip logic", "mandatory": "Mandatory", "rendering": "Rendering", "qid": "Question ID"}
+           "skip": "Skip logic", "mandatory": "Mandatory", "rendering": "Rendering", "qid": "Question ID",
+           "test_do": "Test - If I do...", "test_see": "Test - I should see..."}
+SCENARIOS_TAB = "Test Scenarios"
 EMPTY = {"", "{leave blank}", "na", "n/a", "no", "false", "\xa0"}
 SKIP_RENDERINGS = {"markdown", "order-basket", "workspace-launcher"}
 
-OK, KO, WARN = "✅ Conforme", "❌ Écart", "⚠️ À vérifier"
+OK, KO, WARN, TODO = "✅ Conforme", "❌ Écart", "⚠️ À vérifier", "⏳ À tester"
 
 
 def blank(v):
@@ -74,6 +78,8 @@ def metadata_rows(ws):
             "skip": None if blank(get("skip")) else str(get("skip")).strip(),
             "mandatory": str(get("mandatory") or "").strip().lower() in {"yes", "true", "oui"},
             "rendering": str(get("rendering") or "").strip(),
+            "test_do": None if blank(get("test_do")) else str(get("test_do")).strip(),
+            "test_see": None if blank(get("test_see")) else str(get("test_see")).strip(),
         })
     return out
 
@@ -188,7 +194,29 @@ def answer_concepts(q):
 
 # --- comparison and test cases ------------------------------------------------
 
-def check_form(ws, form_path):
+def read_scenarios(wb):
+    """Rows of the optional Test Scenarios tab, grouped by the Fxx prefix of their Form column."""
+    out = {}
+    if SCENARIOS_TAB not in wb.sheetnames:
+        return out
+    rows = list(wb[SCENARIOS_TAB].iter_rows(values_only=True))
+    header = next((i for i, r in enumerate(rows[:5]) if r and "If I do..." in [str(x).strip() for x in r if x]), None)
+    if header is None:
+        return out
+    names = [str(x).strip() if x else "" for x in rows[header]]
+    col = lambda name: names.index(name) if name in names else None
+    c_form, c_who, c_do, c_see = col("Form"), col("Who (role, site)"), col("If I do..."), col("I should see...")
+    for r in rows[header + 1:]:
+        if c_do is None or blank(r[c_do]):
+            continue
+        form = str(r[c_form] or "").strip() if c_form is not None else ""
+        key = form.split("-")[0] if re.match(r"F\d\d", form) else "(other)"
+        out.setdefault(key, []).append({"form": form, "who": r[c_who] if c_who is not None else "",
+                                        "do": str(r[c_do]).strip(), "see": str(r[c_see] or "").strip() if c_see is not None else ""})
+    return out
+
+
+def check_form(ws, form_path, scenarios=()):
     form = fts.Form(form_path, "en")
     meta = metadata_rows(ws)
     by_label = {norm(r["question"]): r for r in meta}
@@ -202,15 +230,16 @@ def check_form(ws, form_path):
         r["id"] = q["id"] if q else r["id"]
     cases, findings = [], []
 
-    def case(question, action, expected, rule, status, detail=""):
-        cases.append({"question": question, "action": action, "expected": expected, "rule": rule, "status": status, "detail": detail})
+    def case(question, action, expected, rule, status, detail="", kind="skip"):
+        cases.append({"question": question, "action": action, "expected": expected, "rule": rule,
+                      "status": status, "detail": detail, "kind": kind})
 
     for r in meta:
         q = form.by_id.get(r["id"])
         label = r["question"]
         if not q:
             if r["rendering"] not in SKIP_RENDERINGS:
-                findings.append((label, KO, f"Question absente du formulaire (Question ID « {r['id'] or '?'} »)"))
+                findings.append((label, KO, f"Question absente du formulaire (Question ID « {r['id'] or '?'} »)", "structure"))
             continue
         qo = q.get("questionOptions", {})
 
@@ -218,9 +247,9 @@ def check_form(ws, form_path):
         if r["mandatory"]:
             ok = fts.is_required(q)
             case(label, f"J'enregistre sans remplir « {label} »", "L'enregistrement est refusé", "Mandatory = Yes",
-                 OK if ok else KO, "" if ok else "Non obligatoire dans le formulaire")
+                 OK if ok else KO, "" if ok else "Non obligatoire dans le formulaire", kind="structure")
         elif fts.is_required(q):
-            findings.append((label, WARN, "Obligatoire dans le formulaire, pas dans les métadonnées"))
+            findings.append((label, WARN, "Obligatoire dans le formulaire, pas dans les métadonnées", "structure"))
 
         # Limits
         for key, side, word in (("lower", "min", "inférieure"), ("upper", "max", "supérieure")):
@@ -229,13 +258,14 @@ def check_form(ws, form_path):
             try:
                 want = float(r[key])
             except ValueError:
-                findings.append((label, WARN, f"Limite non numérique dans les métadonnées : {r[key]}"))
+                findings.append((label, WARN, f"Limite non numérique dans les métadonnées : {r[key]}", "structure"))
                 continue
             got = qo.get(side)
             ok = got not in (None, "") and float(got) == want
             probe = want - 1 if key == "lower" else want + 1
             case(label, f"Je saisis {probe:g} dans « {label} »", f"Valeur refusée ({word} à la limite de {want:g})",
-                 f"{COLUMNS[key]} = {want:g}", OK if ok else KO, "" if ok else f"Dans le formulaire : {got if got not in (None, '') else 'aucune limite'}")
+                 f"{COLUMNS[key]} = {want:g}", OK if ok else KO, "" if ok else f"Dans le formulaire : {got if got not in (None, '') else 'aucune limite'}",
+                 kind="structure")
 
         # Skip logic
         actual = {}
@@ -251,11 +281,11 @@ def check_form(ws, form_path):
             own = q.get("hide", {}).get("hideWhenExpression")
             if own:
                 findings.append((label, WARN, "Condition d'affichage dans le formulaire, absente des métadonnées : "
-                                 + fts.visibility(form, own)))
+                                 + fts.visibility(form, own), "skip"))
             continue
         clauses = parse_skip(r["skip"])
         if clauses is None:
-            findings.append((label, WARN, f"Skip logic non lisible automatiquement : « {r['skip']} »"))
+            findings.append((label, WARN, f"Skip logic non lisible automatiquement : « {r['skip']} »", "skip"))
             continue
         for c in clauses:
             if c[0] == "age":
@@ -275,12 +305,12 @@ def check_form(ws, form_path):
             parent = by_label.get(norm(parent_label))
             pq = match_question(form, parent, by_norm_label) if parent else None
             if not pq:
-                findings.append((label, WARN, f"Question de la condition introuvable : « {parent_label} »"))
+                findings.append((label, WARN, f"Question de la condition introuvable : « {parent_label} »", "skip"))
                 continue
             concepts = answer_concepts(pq)
             missing = [v for v in values if norm(v) not in concepts]
             if missing:
-                findings.append((label, KO, f"Réponse(s) introuvable(s) dans « {parent_label} » : {', '.join(missing)}"))
+                findings.append((label, KO, f"Réponse(s) introuvable(s) dans « {parent_label} » : {', '.join(missing)}", "skip"))
                 continue
             listed = {concepts[norm(v)] for v in values}
             want = listed if op == "!==" else set(concepts.values()) - listed
@@ -310,67 +340,49 @@ def check_form(ws, form_path):
     for _, q in form.walk():
         rendering = q.get("questionOptions", {}).get("rendering")
         if q.get("id") and q["id"] not in meta_ids and rendering not in fts.SKIP_RENDERINGS | SKIP_RENDERINGS and q.get("type") != "obsGroup":
-            findings.append((q.get("label", q["id"]), WARN, "Question du formulaire absente des métadonnées"))
+            findings.append((q.get("label", q["id"]), WARN, "Question du formulaire absente des métadonnées", "structure"))
+
+    # Tests MSF wrote themselves: optional columns of the tab, and the Test Scenarios tab.
+    for r in meta:
+        if r["test_do"] or r["test_see"]:
+            case(r["question"], r["test_do"] or "", r["test_see"] or "", "Colonnes Test de l'onglet", TODO, kind="custom")
+    for sc in scenarios:
+        case(sc["who"] or "", sc["do"], sc["see"], f"Onglet {SCENARIOS_TAB}", TODO, kind="custom")
     return cases, findings
 
 
 # --- output ---------------------------------------------------------------
 
-FONT = "Arial"
-HEADER = PatternFill("solid", fgColor="1F4E79")
-FILL = {OK: PatternFill("solid", fgColor="E2EFDA"), KO: PatternFill("solid", fgColor="FCE4D6"), WARN: PatternFill("solid", fgColor="FFF2CC")}
-THIN = Side(style="thin", color="BFBFBF")
-BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+def counts(cases, findings, kind):
+    c = [x for x in cases if x["kind"] == kind]
+    f = [x for x in findings if x[3] == kind]
+    ko_findings = sum(x[1] == KO for x in f)
+    return (len(c) + ko_findings, sum(x["status"] == OK for x in c), sum(x["status"] == KO for x in c) + ko_findings,
+            sum(x[1] == WARN for x in f))
 
 
-def write_table(ws, headers, rows, status_col=None):
-    for c, (h, w) in enumerate(headers, start=1):
-        cell = ws.cell(row=1, column=c, value=h)
-        cell.font = Font(name=FONT, bold=True, color="FFFFFF")
-        cell.fill = HEADER
-        cell.alignment = Alignment(wrap_text=True, vertical="center")
-        ws.column_dimensions[cell.column_letter].width = w
-    for r, values in enumerate(rows, start=2):
-        for c, v in enumerate(values, start=1):
-            cell = ws.cell(row=r, column=c, value=v)
-            cell.font = Font(name=FONT, size=10)
-            cell.alignment = Alignment(wrap_text=True, vertical="top")
-            cell.border = BORDER
-            if status_col and c == status_col and v in FILL:
-                cell.fill = FILL[v]
-    ws.freeze_panes = "A2"
-    if rows:
-        ws.auto_filter.ref = f"A1:{ws.cell(row=1, column=len(headers)).column_letter}{len(rows) + 1}"
-    fts.landscape(ws)
+def tracker_cell(cases, findings, kind, day):
+    """Value for a Form QA Tracker cell, in the tracker's "who, date" style."""
+    total, ok, ko, warn = counts(cases, findings, kind)
+    if not total and not ko and not warn:
+        return ""
+    return f"Auto, {day}: " + ("✅" if not ko else "❌") + f" {ok}/{total}" + (f", {ko} écart(s)" if ko else "") + (f", {warn} à vérifier" if warn else "")
 
 
-def write_xlsx(tab, form_path, cases, findings, out):
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Cas de test"
-    write_table(ws, [("N°", 5), ("Question", 30), ("Si je fais...", 42), ("Je dois voir...", 32),
-                     ("Règle (onglet métadonnées)", 40), ("Configuration", 14), ("Détail", 40)],
-                [[i, c["question"], c["action"], c["expected"], c["rule"], c["status"], c["detail"]] for i, c in enumerate(cases, start=1)],
-                status_col=6)
-    ws = wb.create_sheet("Autres points")
-    write_table(ws, [("Question", 36), ("Statut", 14), ("Détail", 80)], [list(f) for f in findings], status_col=2)
-    ws = wb.create_sheet("Lisez-moi")
-    lines = [
-        f"Cas de test générés à partir de l'onglet « {tab} » des métadonnées",
-        "",
-        "Chaque règle de l'onglet (Skip logic, Mandatory, Lower / Upper limit) donne un ou deux cas de test.",
-        "La colonne « Configuration » indique si le formulaire actuel respecte la règle.",
-        "L'onglet « Autres points » liste ce qui diffère entre les métadonnées et le formulaire.",
-        "",
-        "Rien à remplir : pour ajouter ou corriger une règle, modifiez l'onglet des métadonnées comme d'habitude.",
-        "",
-        f"Formulaire comparé : {os.path.relpath(form_path, REPO)}",
-    ]
-    for i, t in enumerate(lines, start=1):
-        ws.cell(row=i, column=1, value=t).font = Font(name=FONT, size=14 if i == 1 else 11, bold=i == 1, color="1F4E79" if i == 1 else "000000")
-    ws.column_dimensions["A"].width = 100
-    ws.sheet_view.showGridLines = False
-    wb.save(out)
+def form_report(tab, form_path, cases, findings):
+    esc = lambda v: str(v or "").replace("|", "\\|").replace("\n", " ")
+    lines = [f"# {tab}", "", f"Formulaire comparé : `{os.path.relpath(form_path, REPO)}`", ""]
+    total, ok = len(cases), sum(c["status"] == OK for c in cases)
+    ko = sum(c["status"] == KO for c in cases) + sum(f[1] == KO for f in findings)
+    lines += [f"**{total} cas de test**, {ok} conformes, {ko} écart(s), {sum(c['status'] == TODO for c in cases)} à tester (écrits par MSF), "
+              f"{sum(f[1] == WARN for f in findings)} point(s) à vérifier.", ""]
+    lines += ["| N° | Question | Si je fais... | Je dois voir... | Règle | Configuration | Détail |", "|---|---|---|---|---|---|---|"]
+    for i, c in enumerate(cases, start=1):
+        lines.append(f"| {i} | {esc(c['question'])} | {esc(c['action'])} | {esc(c['expected'])} | {esc(c['rule'])} | {c['status']} | {esc(c['detail'])} |")
+    if findings:
+        lines += ["", "## Autres points", "", "| Question | Statut | Détail |", "|---|---|---|"]
+        lines += [f"| {esc(q)} | {st} | {esc(d)} |" for q, st, d, _ in findings]
+    return "\n".join(lines) + "\n"
 
 
 def main():
@@ -383,33 +395,32 @@ def main():
     p.add_argument("--out")
     args = p.parse_args()
     wb = load_workbook(args.metadata, read_only=True, data_only=True)
+    scenarios = read_scenarios(wb)
+    day = datetime.date.today().strftime("%b %-d")
 
     if args.form:
         form_path = form_file_for(args.form, args.form_file)
         if not form_path:
             sys.exit(f"No form JSON found for {args.form}; pass --form-file")
-        cases, findings = check_form(wb[args.form], form_path)
-        out = args.out or re.sub(r"[^\w-]+", "_", args.form) + "_cas-de-test.xlsx"
-        write_xlsx(args.form, form_path, cases, findings, out)
-        ko = sum(c["status"] == KO for c in cases) + sum(f[1] == KO for f in findings)
-        print(f"{out}: {len(cases)} cas de test, {sum(c['status'] == OK for c in cases)} conformes, {ko} écarts, "
-              f"{sum(f[1] == WARN for f in findings)} points à vérifier")
-        return
-
-    lines = ["| Onglet | Formulaire | Cas de test | Conformes | Écarts | À vérifier |", "|---|---|---|---|---|---|"]
-    for ws in wb.worksheets:
-        if not re.match(r"F\d\d-", ws.title) or "OLD" in ws.title.upper():
-            continue
-        form_path = form_file_for(ws.title)
-        if not form_path:
-            continue
-        cases, findings = check_form(ws, form_path)
-        ko = sum(c["status"] == KO for c in cases) + sum(f[1] == KO for f in findings)
-        lines.append(f"| {ws.title} | {os.path.basename(form_path)} | {len(cases)} | {sum(c['status'] == OK for c in cases)} | {ko} | {sum(f[1] == WARN for f in findings)} |")
-    md = "\n".join(lines)
+        cases, findings = check_form(wb[args.form], form_path, scenarios.get(args.form.split("-")[0], []))
+        md = form_report(args.form, form_path, cases, findings)
+    else:
+        lines = ["Valeurs à reporter dans l'onglet « Form QA Tracker » (colonnes Structure et Skip logic).", "",
+                 "| Form | Structure | Skip logic | Tests écrits par MSF |", "|---|---|---|---|"]
+        for ws in wb.worksheets:
+            if not re.match(r"F\d\d-", ws.title) or "OLD" in ws.title.upper():
+                continue
+            form_path = form_file_for(ws.title)
+            if not form_path:
+                continue
+            cases, findings = check_form(ws, form_path, scenarios.get(ws.title.split("-")[0], []))
+            custom = sum(c["kind"] == "custom" for c in cases)
+            lines.append(f"| {ws.title} | {tracker_cell(cases, findings, 'structure', day)} | {tracker_cell(cases, findings, 'skip', day)} | "
+                         f"{custom or ''} |")
+        md = "\n".join(lines) + "\n"
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:
-            f.write(md + "\n")
+            f.write(md)
     print(md)
 
 

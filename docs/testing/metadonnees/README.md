@@ -1,111 +1,118 @@
-# Tests générés à partir des métadonnées MSF
+# Tests dans le classeur de métadonnées MSF
 
-Le classeur de métadonnées que MSF maintient déjà (un onglet par formulaire) **est** la spécification. Chaque règle de ses colonnes donne automatiquement un ou deux cas de test :
+Pas de nouveau fichier : les tests vivent dans le classeur de métadonnées que MSF maintient déjà. Le modèle [Template - Tests in metadata workbook.xlsx](Template%20-%20Tests%20in%20metadata%20workbook.xlsx) est un extrait de ce classeur (onglet F17) montrant les seuls ajouts proposés, en bleu.
 
-| Colonne de l'onglet | Cas de test généré |
+## 1. Ce qui est automatique (rien à remplir)
+
+Chaque règle déjà écrite dans un onglet de formulaire devient un ou deux cas de test, vérifiés contre le formulaire configuré :
+
+| Colonne existante | Cas de test généré |
 |---|---|
-| Skip logic : `Hide question if [Referred to MSF] !== 'Yes'` | « Je réponds Yes à Referred to MSF » → la question apparaît ; « Je réponds No » → elle n'apparaît pas |
-| Skip logic : `Hide question if patient's age <= 15 years` | « Patient de 15 ans » → n'apparaît pas ; « Patient de 16 ans » → apparaît |
-| Lower limit / Upper limit | « Je saisis une valeur hors limite » → valeur refusée |
-| Mandatory = Yes | « J'enregistre sans remplir la question » → enregistrement refusé |
+| Skip logic : `Hide question if [Referred to MSF] !== 'Yes'` | « Je réponds Yes » → la question apparaît ; « Je réponds No » → elle n'apparaît pas |
+| Skip logic : `Hide question if patient's age <= 15 years` | « Patient de 15 ans » → n'apparaît pas ; « 16 ans » → apparaît |
+| Lower limit / Upper limit | Une valeur hors limite est refusée |
+| Mandatory = Yes | L'enregistrement sans réponse est refusé |
 
-Chaque cas est comparé au formulaire configuré dans ce dépôt et marqué **✅ Conforme** ou **❌ Écart**. L'équipe MSF n'a rien de nouveau à remplir : pour ajouter ou corriger une règle, elle modifie l'onglet comme d'habitude.
+## 2. Ce que MSF peut ajouter (facultatif)
 
-## Exemples
+| Où | Quoi | Quand |
+|---|---|---|
+| Onglet du formulaire, 2 colonnes à la fin : **Test - If I do...** / **Test - I should see...** | Un test sur la question de la ligne | Calculs, vraisemblance (« 450 kg → alerte »), boutons. Pas besoin de répéter la skip logic. |
+| Nouvel onglet **Test Scenarios** : Form, Who (role, site), If I do..., I should see..., Priority, Status, Comments | Un test par ligne | Parcours patient, plusieurs formulaires, rôles et accès, rapports |
 
-- [F17 Surgery Admission](F17-Surgery_Admission_cas-de-test.xlsx) : 10 cas, tous conformes. Le plus simple pour comprendre le principe.
-- [F48 Blood Transfusion](F48-Blood_Transfusion_cas-de-test.xlsx) : 26 cas, 1 écart (« Management of reactions » devrait aussi apparaître pour la réaction « Other »).
+Une ligne ajoutée à l'onglet **Form Guidance** explique la règle, avec un bon et un mauvais exemple, comme pour la skip logic.
 
-## Générer
+## 3. Les résultats vont dans le Form QA Tracker existant
+
+`--all` donne, pour chaque formulaire, la valeur à reporter dans les colonnes **Structure** (questions présentes, obligatoires, limites) et **Skip logic** de l'onglet « Form QA Tracker », dans le même style que les entrées actuelles (« MB, Aug 30 ») : `Auto, Oct 13: ✅ 8/8`. Le détail d'un formulaire (chaque cas, chaque écart) s'obtient avec `--form`.
 
 ```bash
-# Un formulaire : classeur avec les cas de test et les écarts
-python3 scripts/metadata-check.py "LIME EMR - Iraq Metadata - Release 1.xlsx" --form "F17-Surgery Admission" --out F17.xlsx
-
-# Tous les formulaires : tableau de synthèse
 python3 scripts/metadata-check.py "LIME EMR - Iraq Metadata - Release 1.xlsx" --all
+python3 scripts/metadata-check.py "LIME EMR - Iraq Metadata - Release 1.xlsx" --form "F17-Surgery Admission"
 ```
 
-Le classeur n'est pas versionné dans le dépôt : utiliser l'export le plus récent. Les onglets « OLD » sont ignorés. Pour un formulaire propre à un site, ajouter `--form-file sites/<site>/.../Fxx-....json`.
+Le script lit le classeur sans jamais le modifier. Le classeur n'est pas versionné dans le dépôt : utiliser l'export le plus récent.
 
-## Ce que le script ne couvre pas encore
+## Limites
 
-- Les colonnes **Calculation** et **Custom Logic** (texte libre) : à tester au cas par cas (voir les tests PHQ-9).
-- Une skip logic écrite hors du format de l'onglet « Form Guidance » est listée dans « Autres points » comme « à vérifier ».
-- Le comportement à l'écran : les cas « Conforme » valident la configuration ; les tests navigateur sur DEV/UAT confirment l'affichage.
+- Les colonnes **Calculation** et **Custom Logic** ne sont pas vérifiées automatiquement : les tests écrits dans les colonnes Test les couvrent.
+- Une skip logic hors du format de l'onglet « Form Guidance » apparaît comme « à vérifier ».
+- « Conforme » veut dire que la configuration respecte la règle ; les tests navigateur sur DEV/UAT confirment l'affichage.
 
-## Synthèse, export « Release 1 », 2026-10-13
+## Résultats, export « Release 1 », 2026-10-13
 
-3862 cas de test générés, 3533 conformes (91 %). Une ligne « Écarts » non nulle ne veut pas dire que le formulaire est faux : soit le formulaire, soit l'onglet de métadonnées est à mettre à jour.
+Un ❌ ne veut pas dire que le formulaire est faux : soit le formulaire, soit l'onglet est à mettre à jour. Exemples : F48, « Management of reactions » devrait aussi apparaître pour la réaction « Other » ; F29, la métadonnée dit « hide if age <= 15 », le formulaire applique « age < 15 ».
 
-| Onglet | Formulaire | Cas de test | Conformes | Écarts | À vérifier |
-|---|---|---|---|---|---|
-| F08-ITFC Admission | F08-ITFC_Admission_form.json | 29 | 29 | 0 | 7 |
-| F09-ITFC Discharge | F09-ITFC_Discharge_form.json | 99 | 63 | 36 | 4 |
-| F10-Feeding | F10-Feeding_form.json | 1 | 0 | 1 | 1 |
-| F11-Family Planning Assessment | F11-Family_Planning_Assessment.json | 16 | 16 | 1 | 4 |
-| F12-Family Planning Follow-up | F12-Family_Planning_Follow-up.json | 12 | 12 | 0 | 0 |
-| F13-PNC | F13-PNC.json | 172 | 172 | 12 | 5 |
-| F14-Basic Obstetric Ultrasound | F14-Basic_obstetric_ultrasound.json | 176 | 158 | 18 | 1 |
-| F15-Surgical Safety Checklist | F15-Surgical_safety_checklist.json | 0 | 0 | 0 | 0 |
-| F16-Operative Report | F16-Operative_report.json | 31 | 31 | 0 | 19 |
-| F17-Surgery Admission | F17-Surgery_admission_form.json | 10 | 10 | 0 | 0 |
-| F18-Surgery Discharge | F18-Surgery_discharge_form.json | 30 | 30 | 0 | 0 |
-| F19-Pre-anesthesia Record | F19-Pre_anesthesia_record.json | 47 | 47 | 0 | 0 |
-| F20-Recovery | F20-Recovery_form.json | 18 | 15 | 3 | 0 |
-| F21-Anesthesia Transfer | F21-Anesthesia_transfer_form.json | 11 | 11 | 0 | 0 |
-| F22-Neonatal Delivery | F22-Neonatal_delivery_form.json | 32 | 32 | 0 | 0 |
-| F23-Neonatal Admission | F23-Neonatal_admission_form.json | 25 | 25 | 0 | 0 |
-| F24-Neonatal Discharge | F24-Neonatal_discharge_form.json | 47 | 47 | 0 | 1 |
-| F25-Pediatrics Admission | F25-Pediatrics_admission_form.json | 7 | 7 | 2 | 0 |
-| F26-Pediatrics Discharge | F26-Pediatrics_discharge_form.json | 68 | 68 | 4 | 1 |
-| F27-Adult Admission | F27-Adult_admission_form.json | 2 | 2 | 0 | 2 |
-| F28-Adult Discharge | F28-Adult_discharge_form.json | 36 | 36 | 0 | 4 |
-| F29-MHPSS Baseline | F29-MHPSS_Baseline_v2.json | 87 | 35 | 52 | 8 |
-| F30-MHPSS Follow-up | F30-MHPSS_Follow-up_v2.json | 95 | 46 | 49 | 15 |
-| F31-mhGAP Baseline | F31-mhGAP_Baseline_v2.json | 66 | 18 | 48 | 4 |
-| F32-mhGAP Follow-up | F32-mhGAP_Follow-up_v2.json | 70 | 23 | 47 | 4 |
-| F33-MHPSS Closure | F33-MHPSS_Closure_v2.json | 20 | 20 | 2 | 0 |
-| F34-mhGAP Closure | F34-mhGAP_Closure_v2.json | 20 | 20 | 2 | 0 |
-| F35-MH-PHQ-9 | F35-MH-PHQ-9_v2.json | 2 | 2 | 0 | 0 |
-| F36-Maternity Triage | F36-Maternity_triage_form.json | 12 | 12 | 0 | 0 |
-| F37-Maternity Admission | F37-Maternity_admission_form.json | 34 | 32 | 2 | 0 |
-| F38-Maternity Delivery | F38-Maternity_delivery_form.json | 10 | 10 | 0 | 0 |
-| F39-Maternity Discharge | F39-Maternity_discharge_form.json | 26 | 26 | 0 | 0 |
-| F40-Referral & Discharge | F40-Referral_and_Discharge.json | 64 | 64 | 0 | 0 |
-| F41-ER Triage | F41-ER_triage_form.json | 29 | 29 | 0 | 0 |
-| F42-ER Consultation | F42-ER_consultation_form.json | 0 | 0 | 0 | 1 |
-| F43-ER Exit | F43-ER_exit_form.json | 37 | 37 | 0 | 0 |
-| F44-OPD General | F44-OPD_general_form.json | 12 | 12 | 0 | 2 |
-| F45-ATFC | F45-ATFC_form.json | 120 | 110 | 10 | 4 |
-| F46-Small Procedure Report | F46-Small_procedure_report_form.json | 2 | 2 | 0 | 0 |
-| F47-Pre-donation | F47-Pre-donation.json | 91 | 89 | 4 | 2 |
-| F48-Blood Transfusion | F48-Blood_transfusion_form.json | 26 | 25 | 1 | 0 |
-| F49-NCDs Baseline | F49-NCDs_Baseline.json | 143 | 143 | 3 | 1 |
-| F50-NCDs Follow-up | F50-NCDs_Follow-up.json | 133 | 131 | 4 | 1 |
-| F51-HIV Baseline | F51-HIV_Baseline.json | 43 | 43 | 2 | 2 |
-| F52-HIV Follow-up | F52-HIV_Follow-up.json | 51 | 51 | 2 | 2 |
-| F53-TB Baseline | F53-TB_Baseline.json | 29 | 29 | 0 | 1 |
-| F54-TB Follow-up | F54-TB_Follow-up.json | 27 | 27 | 0 | 0 |
-| F55-HBV Baseline | F55-HBV_Baseline.json | 70 | 66 | 4 | 0 |
-| F56-HBV Follow-up | F56-HBV_Follow-up.json | 70 | 60 | 10 | 1 |
-| F57-HCV Baseline | F57-HCV_Baseline.json | 79 | 77 | 3 | 0 |
-| F58-HCV Follow-up | F58-HCV_Follow-up.json | 69 | 67 | 3 | 0 |
-| F59-Social Work Baseline | F59-Social_Work_Baseline.json | 304 | 304 | 0 | 1 |
-| F60-Social Work Follow-up | F60-Social_Work_Follow-up.json | 353 | 351 | 2 | 0 |
-| F61-Travel medicine | F61-Travel_medicine.json | 40 | 40 | 8 | 7 |
-| F62-Palliative care Baseline | F62-Palliative_Care_Baseline.json | 40 | 40 | 0 | 0 |
-| F63-Palliative care Follow-up | F63-Palliative_Care_Follow-up.json | 38 | 30 | 8 | 0 |
-| F64-ICU Admission | F64-ICU_Admission.json | 35 | 35 | 0 | 0 |
-| F65-ICU Discharge | F65-ICU_Discharge.json | 36 | 36 | 0 | 1 |
-| F66-Snakebites | F66-Snakebites.json | 234 | 226 | 18 | 0 |
-| F67-Cholera | F67-Cholera.json | 28 | 28 | 1 | 0 |
-| F68-NTDs Dengue | F68-NTDs_Dengue.json | 4 | 4 | 0 | 0 |
-| F69-NTDs Filariasis | F69-NTDs_Filariasis.json | 14 | 14 | 0 | 6 |
-| F70-NTDs Schistosomiasis | F70-NTDs_Schistosomiasis.json | 16 | 16 | 0 | 0 |
-| F71-POCUS | F71-POCUS.json | 72 | 66 | 7 | 5 |
-| F72-ANC | F72-ANC.json | 80 | 76 | 7 | 1 |
-| F73-Gynaecology | F73-Gynaecology.json | 25 | 23 | 2 | 1 |
-| F74-Cervical Cancer | F74-Cervical_Cancer.json | 111 | 103 | 8 | 5 |
-| F75-Wound Dressing | F75-Wound_Dressing.json | 14 | 12 | 2 | 1 |
-| F76-Radiology Request | F76-Radiology_Request.json | 12 | 12 | 0 | 0 |
+Valeurs à reporter dans l'onglet « Form QA Tracker » (colonnes Structure et Skip logic).
+
+| Form | Structure | Skip logic | Tests écrits par MSF |
+|---|---|---|---|
+| F08-ITFC Admission | Auto, Oct 13: ✅ 11/11, 2 à vérifier | Auto, Oct 13: ✅ 18/18, 5 à vérifier |  |
+| F09-ITFC Discharge | Auto, Oct 13: ✅ 14/14 | Auto, Oct 13: ❌ 49/85, 36 écart(s), 4 à vérifier |  |
+| F10-Feeding | Auto, Oct 13: ❌ 0/1, 1 écart(s), 1 à vérifier |  |  |
+| F11-Family Planning Assessment | Auto, Oct 13: ✅ 4/4 | Auto, Oct 13: ❌ 12/13, 1 écart(s), 4 à vérifier |  |
+| F12-Family Planning Follow-up |  | Auto, Oct 13: ✅ 12/12 |  |
+| F13-PNC | Auto, Oct 13: ❌ 10/11, 1 écart(s) | Auto, Oct 13: ❌ 162/173, 11 écart(s), 5 à vérifier |  |
+| F14-Basic Obstetric Ultrasound | Auto, Oct 13: ❌ 44/60, 16 écart(s), 1 à vérifier | Auto, Oct 13: ❌ 114/116, 2 écart(s) |  |
+| F15-Surgical Safety Checklist |  |  |  |
+| F16-Operative Report | Auto, Oct 13: ✅ 1/1, 1 à vérifier | Auto, Oct 13: ✅ 30/30, 18 à vérifier |  |
+| F17-Surgery Admission | Auto, Oct 13: ✅ 2/2 | Auto, Oct 13: ✅ 8/8 |  |
+| F18-Surgery Discharge |  | Auto, Oct 13: ✅ 30/30 |  |
+| F19-Pre-anesthesia Record | Auto, Oct 13: ✅ 13/13 | Auto, Oct 13: ✅ 34/34 |  |
+| F20-Recovery | Auto, Oct 13: ❌ 3/6, 3 écart(s) | Auto, Oct 13: ✅ 12/12 |  |
+| F21-Anesthesia Transfer | Auto, Oct 13: ✅ 1/1 | Auto, Oct 13: ✅ 10/10 |  |
+| F22-Neonatal Delivery | Auto, Oct 13: ✅ 6/6 | Auto, Oct 13: ✅ 26/26 |  |
+| F23-Neonatal Admission | Auto, Oct 13: ✅ 9/9 | Auto, Oct 13: ✅ 16/16 |  |
+| F24-Neonatal Discharge | Auto, Oct 13: ✅ 5/5 | Auto, Oct 13: ✅ 42/42, 1 à vérifier |  |
+| F25-Pediatrics Admission | Auto, Oct 13: ✅ 3/3 | Auto, Oct 13: ❌ 4/6, 2 écart(s) |  |
+| F26-Pediatrics Discharge | Auto, Oct 13: ✅ 10/10 | Auto, Oct 13: ❌ 58/62, 4 écart(s), 1 à vérifier |  |
+| F27-Adult Admission |  | Auto, Oct 13: ✅ 2/2, 2 à vérifier |  |
+| F28-Adult Discharge | Auto, Oct 13: ✅ 6/6 | Auto, Oct 13: ✅ 30/30, 4 à vérifier |  |
+| F29-MHPSS Baseline | Auto, Oct 13: ❌ 15/21, 6 écart(s) | Auto, Oct 13: ❌ 20/66, 46 écart(s), 8 à vérifier |  |
+| F30-MHPSS Follow-up | Auto, Oct 13: ❌ 12/15, 3 écart(s) | Auto, Oct 13: ❌ 34/80, 46 écart(s), 15 à vérifier |  |
+| F31-mhGAP Baseline | Auto, Oct 13: ❌ 12/14, 2 écart(s) | Auto, Oct 13: ❌ 6/52, 46 écart(s), 4 à vérifier |  |
+| F32-mhGAP Follow-up | Auto, Oct 13: ❌ 11/12, 1 écart(s) | Auto, Oct 13: ❌ 12/58, 46 écart(s), 4 à vérifier |  |
+| F33-MHPSS Closure | Auto, Oct 13: ✅ 8/8 | Auto, Oct 13: ❌ 12/14, 2 écart(s) |  |
+| F34-mhGAP Closure | Auto, Oct 13: ✅ 8/8 | Auto, Oct 13: ❌ 12/14, 2 écart(s) |  |
+| F35-MH-PHQ-9 | Auto, Oct 13: ✅ 2/2 |  |  |
+| F36-Maternity Triage | Auto, Oct 13: ✅ 12/12 |  |  |
+| F37-Maternity Admission | Auto, Oct 13: ❌ 18/20, 2 écart(s) | Auto, Oct 13: ✅ 14/14 |  |
+| F38-Maternity Delivery |  | Auto, Oct 13: ✅ 10/10 |  |
+| F39-Maternity Discharge | Auto, Oct 13: ✅ 4/4 | Auto, Oct 13: ✅ 22/22 |  |
+| F40-Referral & Discharge | Auto, Oct 13: ✅ 14/14 | Auto, Oct 13: ✅ 50/50 |  |
+| F41-ER Triage | Auto, Oct 13: ✅ 1/1 | Auto, Oct 13: ✅ 28/28 |  |
+| F42-ER Consultation |  | Auto, Oct 13: ✅ 0/0, 1 à vérifier |  |
+| F43-ER Exit | Auto, Oct 13: ✅ 3/3 | Auto, Oct 13: ✅ 34/34 |  |
+| F44-OPD General |  | Auto, Oct 13: ✅ 12/12, 2 à vérifier |  |
+| F45-ATFC | Auto, Oct 13: ✅ 6/6 | Auto, Oct 13: ❌ 104/114, 10 écart(s), 4 à vérifier |  |
+| F46-Small Procedure Report |  | Auto, Oct 13: ✅ 2/2 |  |
+| F47-Pre-donation | Auto, Oct 13: ❌ 1/3, 2 écart(s) | Auto, Oct 13: ❌ 88/90, 2 écart(s), 2 à vérifier |  |
+| F48-Blood Transfusion | Auto, Oct 13: ✅ 5/5 | Auto, Oct 13: ❌ 20/21, 1 écart(s) |  |
+| F49-NCDs Baseline | Auto, Oct 13: ✅ 27/27, 1 à vérifier | Auto, Oct 13: ❌ 116/119, 3 écart(s) |  |
+| F50-NCDs Follow-up | Auto, Oct 13: ❌ 25/28, 3 écart(s), 1 à vérifier | Auto, Oct 13: ❌ 106/107, 1 écart(s) |  |
+| F51-HIV Baseline | Auto, Oct 13: ✅ 5/5 | Auto, Oct 13: ❌ 38/40, 2 écart(s), 2 à vérifier |  |
+| F52-HIV Follow-up | Auto, Oct 13: ✅ 5/5 | Auto, Oct 13: ❌ 46/48, 2 écart(s), 2 à vérifier |  |
+| F53-TB Baseline | Auto, Oct 13: ✅ 5/5 | Auto, Oct 13: ✅ 24/24, 1 à vérifier |  |
+| F54-TB Follow-up | Auto, Oct 13: ✅ 5/5 | Auto, Oct 13: ✅ 22/22 |  |
+| F55-HBV Baseline | Auto, Oct 13: ❌ 6/8, 2 écart(s) | Auto, Oct 13: ❌ 60/62, 2 écart(s) |  |
+| F56-HBV Follow-up | Auto, Oct 13: ❌ 6/8, 2 écart(s) | Auto, Oct 13: ❌ 54/62, 8 écart(s), 1 à vérifier |  |
+| F57-HCV Baseline | Auto, Oct 13: ❌ 7/9, 2 écart(s) | Auto, Oct 13: ❌ 70/71, 1 écart(s) |  |
+| F58-HCV Follow-up | Auto, Oct 13: ❌ 7/9, 2 écart(s) | Auto, Oct 13: ❌ 60/61, 1 écart(s) |  |
+| F59-Social Work Baseline | Auto, Oct 13: ✅ 54/54 | Auto, Oct 13: ✅ 250/250, 1 à vérifier |  |
+| F60-Social Work Follow-up | Auto, Oct 13: ✅ 55/55 | Auto, Oct 13: ❌ 296/298, 2 écart(s) |  |
+| F61-Travel medicine | Auto, Oct 13: ✅ 20/20 | Auto, Oct 13: ❌ 20/28, 8 écart(s), 7 à vérifier |  |
+| F62-Palliative care Baseline |  | Auto, Oct 13: ✅ 40/40 |  |
+| F63-Palliative care Follow-up |  | Auto, Oct 13: ❌ 30/38, 8 écart(s) |  |
+| F64-ICU Admission | Auto, Oct 13: ✅ 1/1 | Auto, Oct 13: ✅ 34/34 |  |
+| F65-ICU Discharge | Auto, Oct 13: ✅ 4/4 | Auto, Oct 13: ✅ 32/32, 1 à vérifier |  |
+| F66-Snakebites | Auto, Oct 13: ✅ 18/18 | Auto, Oct 13: ❌ 208/226, 18 écart(s) |  |
+| F67-Cholera |  | Auto, Oct 13: ❌ 28/29, 1 écart(s) |  |
+| F68-NTDs Dengue |  | Auto, Oct 13: ✅ 4/4 |  |
+| F69-NTDs Filariasis |  | Auto, Oct 13: ✅ 14/14, 6 à vérifier |  |
+| F70-NTDs Schistosomiasis |  | Auto, Oct 13: ✅ 16/16 |  |
+| F71-POCUS | Auto, Oct 13: ✅ 0/0, 5 à vérifier | Auto, Oct 13: ❌ 66/73, 7 écart(s) |  |
+| F72-ANC | Auto, Oct 13: ❌ 16/18, 2 écart(s), 1 à vérifier | Auto, Oct 13: ❌ 60/65, 5 écart(s) |  |
+| F73-Gynaecology | Auto, Oct 13: ✅ 9/9, 1 à vérifier | Auto, Oct 13: ❌ 14/16, 2 écart(s) |  |
+| F74-Cervical Cancer | Auto, Oct 13: ✅ 10/10, 4 à vérifier | Auto, Oct 13: ❌ 93/101, 8 écart(s), 1 à vérifier |  |
+| F75-Wound Dressing | Auto, Oct 13: ✅ 2/2, 1 à vérifier | Auto, Oct 13: ❌ 10/12, 2 écart(s) |  |
+| F76-Radiology Request |  | Auto, Oct 13: ✅ 12/12 |  |

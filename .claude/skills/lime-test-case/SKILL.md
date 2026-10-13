@@ -13,14 +13,8 @@ Accept any of: a Jira key (`LIME2-123`, read it with the Jira tools if connected
 
 ## Steps
 
-0. **If the input is the MSF metadata workbook** (or a form tab of it): run `python3 scripts/metadata-check.py <workbook> --form "<tab>"` (or `--all`). It derives test cases from the Skip logic, Mandatory, Lower/Upper limit columns and marks each as matching the form JSON or not. Then: write config-level tests for the matching rules, list every "❌ Écart" for the team to decide whether the form or the metadata is wrong (never assume the form is right), and handle the Calculation / Custom Logic columns by hand. See `docs/testing/metadonnees/README.md`.
-0. **If the input is a returned form review sheet** (`docs/testing/fiches/retours/*.xlsx`, made by `scripts/form-test-sheet.py`): read it with openpyxl. Tab `Questions`: the hidden column K is the question id; column H is MSF's verdict (Oui / Non / Je ne sais pas), I the correction, J a remark or example. Tab `Scénarios`: Pour qui / Si je fais / Je dois voir / Important, ignore the grey example row. Tab `Listes longues`: remarks on individual answers.
-   - "Oui" rows: the current configuration is confirmed. Generate test cases that lock it in (skip logic both ways, limits on both sides, mandatory), mostly at configuration level.
-   - "Non" rows: a change request. Generate the test case for the expected behaviour (it will fail until the form is fixed) and list the change in a summary for the team to open a Jira ticket. Never edit the form yourself from the sheet.
-   - "Je ne sais pas" rows and blanks: list as open questions.
-   - Regenerate the sheet from the current form and compare: if the form changed since the sheet was sent, say which rows MSF reviewed against an older version.
-
-1. **Read the example first**: `docs/testing/exemples/REQ-MH-PHQ9-001.md`. MSF writes requirements in the simple four-column format of `docs/testing/modele-cas-de-test.md` (Quoi ? / Pour qui ? / Si je fais... / Je dois voir...). Your job is to expand that into the detailed format below. Check `docs/testing/cas-de-test/` for existing IDs so you do not reuse one.
+0. **If the input is the MSF metadata workbook** (or a form tab of it), which is the normal case: run `python3 scripts/metadata-check.py <workbook> --form "<tab>"` (or `--all` for the Form QA Tracker values). It derives test cases from the Skip logic, Mandatory, Lower/Upper limit columns, marks each as matching the form JSON or not, and lists the tests MSF wrote in the optional `Test - If I do...` / `Test - I should see...` columns and the `Test Scenarios` tab as "À tester". Then: write config-level tests for the matching rules, turn the "À tester" rows into automated tests (lime-e2e-test), list every "❌ Écart" for the team to decide whether the form or the metadata is wrong (never assume the form is right). Never create a new spreadsheet for MSF and never write to their workbook; results go into the report and the values for their Form QA Tracker. See `docs/testing/metadonnees/README.md`.
+1. **Read the example first**: `docs/testing/exemples/REQ-MH-PHQ9-001.md`. For requirements that do not come from the workbook (Jira, field reports), expand them into the detailed format below. Check `docs/testing/cas-de-test/` for existing IDs so you do not reuse one.
 2. **Ground every rule in the configuration**. Never invent labels, thresholds or roles. Look them up:
    - Forms: `distro/configs/openmrs/initializer_config/ampathforms/*.json` and `sites/<site>/configs/openmrs/initializer_config/ampathforms/` (question `id`, `label`, `required`, `hide.hideWhenExpression`, `questionOptions.answers`, `calculate.calculateExpression`, `validators`, `min`/`max`).
    - Translations: `.../ampathformstranslations/<form>_translations_<lang>.json` (use the exact displayed label in the user's language).
@@ -36,7 +30,7 @@ Accept any of: a Jira key (`LIME2-123`, read it with the Jira tools if connected
    - *Manual*: only when automation costs more than it saves (printing, hardware, judgement calls).
 5. **Report gaps and contradictions** as open questions at the top of the file, in plain French for MSF: rules the config does not enforce (not required, not read-only, severity not derived from score), labels missing a translation, behaviour that differs between sites. These are often the most valuable output.
 6. **Write the file** to `docs/testing/cas-de-test/<REQ-ID>.md` in two parts, like the example:
-   - **Top, for MSF**: the requirement in the simple four-column table, plain French, no IDs or jargon, then the open questions. A clinician must be able to read it in one minute.
+   - **Top, for MSF**: the requirement as « Si je fais... / Je dois voir... » rows, plain French, no IDs or jargon, then the open questions. A clinician must be able to read it in one minute.
    - **Bottom, in a `<details>` block for the team**: the detailed test cases below.
 
 ## Detailed test case format (team part)
