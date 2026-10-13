@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { applyPending, parseDoc, renderDoc } from "../src/lib/profile";
 import { buildView, cellState, commitMessage } from "../src/lib/model";
+import { problems } from "../src/lib/validate";
 
 const FILE = path.resolve(__dirname, "../../../docs/site-matrix/sites.yaml");
 const text = readFileSync(FILE, "utf8");
@@ -51,6 +52,21 @@ describe("sites.yaml written by the app matches the Python writer", () => {
     const { doc } = fresh();
     applyPending(doc, { mosul: { "detected.forms": ["F99"] } });
     expect(parseDoc(renderDoc(doc)).sites.mosul.detected).toEqual(fresh().sites.mosul.detected);
+  });
+});
+
+describe("sites.yaml is checked against its schema", () => {
+  it("the file in the repo is valid", () => {
+    expect(problems(fresh().doc)).toEqual([]);
+  });
+  it("catches typos, bad dates and unknown forms", () => {
+    const { doc } = fresh();
+    applyPending(doc, { mombasa: { status: "livee", "needs.forms.F11": "neded", "milestones.uat": { date: "15/10/2026" }, "needs.forms.F99": "needed" } });
+    const out = problems(doc).join("\n");
+    expect(out).toContain("sites/mombasa/status");
+    expect(out).toContain("sites/mombasa/needs/forms/F11");
+    expect(out).toContain("sites/mombasa/milestones/uat/date");
+    expect(out).toContain("form F99 is not in catalog.forms");
   });
 });
 

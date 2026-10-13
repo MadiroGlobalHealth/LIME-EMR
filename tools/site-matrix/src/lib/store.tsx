@@ -162,6 +162,9 @@ function useMatrixState() {
         const remote = await gh.read(cfg.file);
         const { doc, sites: before } = parseDoc(remote.text);
         const changed = applyPending(doc as SitesDoc, pending);
+        const { problems } = await import("./validate"); // loaded on first save only
+        const invalid = problems(doc as SitesDoc);
+        if (invalid.length) throw new Error(`These changes would make sites.yaml invalid, so nothing was saved: ${invalid.slice(0, 3).join("; ")}${invalid.length > 3 ? ` and ${invalid.length - 3} more` : ""}.`);
         const text = renderDoc(doc as SitesDoc);
         if (!changed.length || text === remote.text) {
           adopt(remote.text);

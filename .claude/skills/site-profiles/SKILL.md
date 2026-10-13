@@ -24,6 +24,11 @@ Never edit `detected` by hand: rerun the extractor. Never put repo facts in the 
 decisions there. A missing need means "no decision". `needs.forms_default: not_needed` marks a
 requirements list that is exhaustive (anything not listed is out of scope).
 
+`docs/site-matrix/sites.schema.json` (JSON Schema) defines what is allowed: status and need
+values, date formats (`YYYY-MM-DD`, `YYYY-MM`, `YYYY`), known keys, and form codes `F00`. The app
+refuses to save, and the scripts refuse to write, a file that breaks it or that references forms or
+modules missing from `catalog`. Run `validate.py` after any hand or AI edit.
+
 The file is written by both the app (js-yaml) and the scripts (PyYAML, `scripts/site-profiles/profiles.py`),
 which produce identical bytes. When editing it by hand, keep the same layout (2-space indent,
 indented lists) or run `python3 -c "import sys; sys.path.insert(0,'scripts/site-profiles'); import profiles as p; p.save_doc(p.load_doc())"`
@@ -34,6 +39,7 @@ Scripts (Python 3 + PyYAML), run from the repo root:
 ```bash
 python3 scripts/site-profiles/extract.py [site ...]   # refresh `detected` from the repo (adds new distro forms to the catalog)
 python3 scripts/site-profiles/gaps.py [site ...]      # what is needed but not built, and built but not needed, as a checklist
+python3 scripts/site-profiles/validate.py             # check sites.yaml against sites.schema.json and the catalog
 python3 scripts/site-profiles/build.py [--branch B]   # refresh the app's offline copy (tools/site-matrix/src/snapshot.json)
 ```
 
@@ -65,7 +71,7 @@ Locations Services, Forms) and meeting notes.
    - Dates → `milestones.<requirements|uat|prod|live|handover>.date` (`YYYY-MM-DD`, `YYYY-MM` or
      `YYYY`), with `done: true` once reached. Do not invent dates; leave them out.
    - Action items → `open_items`.
-3. Run `build.py`, then `gaps.py <site>` and show the checklist.
+3. Run `validate.py` and `build.py`, then `gaps.py <site>` and show the checklist.
 
 ## 3. Implement a site's decisions in the repo
 
@@ -78,7 +84,7 @@ This is the "implementer" workflow: turn what people decided in `sites.yaml` int
    `sites/<site>` (or the distro for new shared forms). A new site needs its folder first
    (`how_to_apply.new_site`). Keep each change minimal and in the repo's existing style.
 3. Run `python3 scripts/site-profiles/extract.py <site>`: `detected` must now show the change, and
-   `gaps.py <site>` must no longer list it. Anything that does not converge is a mistake to fix,
+   `gaps.py <site>` must no longer list it. `validate.py` must pass. Anything that does not converge is a mistake to fix,
    not something to paper over by editing `detected` or `needs`.
 4. Commit config and `sites.yaml` together on a branch and open a PR that lists the items done and
    any left (with why). Do not change decisions (`needs`, dates, status) to make gaps disappear;

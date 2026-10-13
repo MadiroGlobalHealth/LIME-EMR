@@ -24,6 +24,8 @@ neutral theme) on Radix, TanStack Table, cmdk (⌘K search), sonner (notificatio
   saving at the same time does not lose their edits (a refused write is retried). The app checks
   that the account can push.
 - Unsaved changes stay in the browser until saved or discarded.
+- Before writing, the file is checked against `docs/site-matrix/sites.schema.json` (with ajv, loaded
+  on the first save) and against the catalog; an invalid result is not saved.
 - Repo facts (`detected` under each site) are never written by the app; the `site-profiles` skill
   refreshes them from the repo.
 

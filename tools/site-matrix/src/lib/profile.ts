@@ -8,7 +8,8 @@ export const ORDER = [
   "name", "country", "status", "phase", "milestones", "registration", "locations", "services",
   "needs", "form_notes", "custom_forms", "integration", "open_items", "notes",
 ];
-export const HEADER = `# LIME EMR site matrix: the setup and plans of every site, in one file.
+export const HEADER = `# yaml-language-server: $schema=sites.schema.json
+# LIME EMR site matrix: the setup and plans of every site, in one file.
 #
 # Written by the Site Matrix app (tools/site-matrix), where each save is a commit by the person who
 # made it, and by scripts/site-profiles/extract.py, which refreshes each site's \`detected\` block.

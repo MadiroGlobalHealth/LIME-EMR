@@ -12,6 +12,11 @@ Everything is in one file: [`sites.yaml`](sites.yaml).
   turn a site's decisions into config changes.
 - `catalog`: the shared forms (with their program) and the key modules (with their frontend apps).
 
+What is allowed in the file (status and need values, date formats, known keys) is defined in
+[`sites.schema.json`](sites.schema.json). The app checks it before every save, and
+`python3 scripts/site-profiles/validate.py` checks it from the command line. Editors with YAML
+support (VS Code with the YAML extension) also use it for autocompletion and inline errors.
+
 Work still to do for a site is what its decisions ask for that `detected` does not show yet:
 `python3 scripts/site-profiles/gaps.py <site>` prints it as a checklist.
 

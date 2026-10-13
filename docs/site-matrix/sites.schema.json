@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MadiroGlobalHealth/LIME-EMR/docs/site-matrix/sites.schema.json",
+  "title": "LIME EMR site matrix (sites.yaml)",
+  "description": "Setup and plans of every LIME EMR site. Checked by the Site Matrix app before each save, by scripts/site-profiles/validate.py, and by editors that read the yaml-language-server comment at the top of sites.yaml.",
+  "type": "object",
+  "required": ["version", "sites", "catalog"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "how_to_apply": {
+      "description": "Where each item is configured in the repo.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "sites": {
+      "description": "One entry per site, keyed by its id (the sites/<id> folder once it exists).",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/siteId" },
+      "additionalProperties": { "$ref": "#/$defs/site" }
+    },
+    "catalog": {
+      "type": "object",
+      "required": ["forms", "modules"],
+      "additionalProperties": false,
+      "properties": {
+        "forms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["code", "name", "program"],
+            "additionalProperties": false,
+            "properties": {
+              "code": { "$ref": "#/$defs/formCode" },
+              "name": { "type": "string", "minLength": 1 },
+              "program": { "type": "string", "minLength": 1 },
+              "in_library": { "type": "boolean", "description": "false: referenced by sites but not in the distro library yet." }
+            }
+          }
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "apps"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+              "name": { "type": "string", "minLength": 1 },
+              "apps": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "siteId": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "formCode": { "type": "string", "pattern": "^F\\d{2}$" },
+    "need": { "enum": ["needed", "not_needed", "on_hold"] },
+    "text": { "type": ["string", "null"] },
+    "textList": { "type": ["array", "null"], "items": { "type": "string" } },
+    "date": {
+      "description": "A day (2026-11-30), a month (2026-11) or a year (2026).",
+      "type": ["string", "null"],
+      "pattern": "^\\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\\d|3[01]))?)?$"
+    },
+    "milestone": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "date": { "$ref": "#/$defs/date" },
+        "done": { "type": "boolean" },
+        "approx": { "type": "boolean" },
+        "note": { "type": "string" }
+      }
+    },
+    "site": {
+      "type": "object",
+      "required": ["name", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "country": { "$ref": "#/$defs/text" },
+        "status": { "enum": ["live", "preparation", "planned", "closed"] },
+        "phase": { "$ref": "#/$defs/text" },
+        "milestones": {
+          "type": "object",
+          "propertyNames": { "enum": ["requirements", "uat", "prod", "live", "handover"] },
+          "additionalProperties": { "$ref": "#/$defs/milestone" }
+        },
+        "registration": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id_prefix": { "$ref": "#/$defs/text" },
+            "other_ids": { "$ref": "#/$defs/textList" },
+            "extra_fields": { "$ref": "#/$defs/textList" },
+            "address": { "$ref": "#/$defs/textList" },
+            "languages": { "$ref": "#/$defs/textList" },
+            "custom_form": { "type": "boolean", "description": "The site needs its own registration form." }
+          }
+        },
+        "locations": { "$ref": "#/$defs/textList" },
+        "services": { "$ref": "#/$defs/textList" },
+        "needs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "forms_default": { "$ref": "#/$defs/need", "description": "Need of every form not listed in `forms` (not_needed when the requirements list is exhaustive)." },
+            "forms": {
+              "type": "object",
+              "propertyNames": { "$ref": "#/$defs/formCode" },
+              "additionalProperties": { "$ref": "#/$defs/need" }
+            },
+            "modules": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/need" }
+            }
+          }
+        },
+        "form_notes": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/formCode" },
+          "additionalProperties": { "type": "string" }
+        },
+        "custom_forms": {
+          "description": "Forms this site needs that are not in the library yet.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["code", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "code": { "type": "string", "minLength": 1 },
+              "name": { "type": "string", "minLength": 1 },
+              "program": { "type": "string" },
+              "need": { "$ref": "#/$defs/need" },
+              "note": { "$ref": "#/$defs/text" }
+            }
+          }
+        },
+        "integration": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "need": { "$ref": "#/$defs/need" },
+            "dhis2_target": { "$ref": "#/$defs/text" },
+            "note": { "type": "string" }
+          }
+        },
+        "open_items": { "type": "array", "items": { "type": "string" } },
+        "notes": { "$ref": "#/$defs/text" },
+        "detected": {
+          "description": "Generated by scripts/site-profiles/extract.py from the repo. Do not edit by hand.",
+          "type": "object"
+        }
+      }
+    }
+  }
+}

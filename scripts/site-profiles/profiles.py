@@ -3,13 +3,16 @@
 The file is written by the Site Matrix app (tools/site-matrix, js-yaml) and by these scripts
 (PyYAML). Both produce the same bytes, so a save only changes the lines that changed.
 """
+import json
 import os
+import sys
 
 import yaml
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 MATRIX = os.path.join(ROOT, "docs", "site-matrix")
 SITES_FILE = os.path.join(MATRIX, "sites.yaml")
+SCHEMA_FILE = os.path.join(MATRIX, "sites.schema.json")
 
 # Top-level keys, in file order.
 DOC_ORDER = ["version", "how_to_apply", "sites", "catalog"]
@@ -18,6 +21,7 @@ ORDER = ["name", "country", "status", "phase", "milestones", "registration", "lo
          "needs", "form_notes", "custom_forms", "integration", "open_items", "notes", "detected"]
 
 HEADER = """\
+# yaml-language-server: $schema=sites.schema.json
 # LIME EMR site matrix: the setup and plans of every site, in one file.
 #
 # Written by the Site Matrix app (tools/site-matrix), where each save is a commit by the person who
@@ -87,7 +91,35 @@ def render_doc(doc):
     return HEADER + yaml.dump(out, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=100000, default_flow_style=False)
 
 
+def problems(doc):
+    """Schema errors, then references to forms or modules missing from the catalog."""
+    out = []
+    try:
+        import jsonschema
+    except ImportError:
+        print("warning: install jsonschema (pip install jsonschema) to check sites.yaml against its schema", file=sys.stderr)
+    else:
+        validator = jsonschema.Draft202012Validator(json.load(open(SCHEMA_FILE, encoding="utf-8")))
+        for e in sorted(validator.iter_errors(doc), key=lambda e: [str(p) for p in e.absolute_path]):
+            out.append("%s: %s" % ("/".join(str(p) for p in e.absolute_path) or "(top)", e.message))
+    cat = doc.get("catalog") or {}
+    forms = {f.get("code") for f in cat.get("forms") or []}
+    modules = {m.get("id") for m in cat.get("modules") or []}
+    for sid, s in (doc.get("sites") or {}).items():
+        needs = (s or {}).get("needs") or {}
+        for code in list((needs.get("forms") or {})) + list((s or {}).get("form_notes") or {}):
+            if code not in forms:
+                out.append("sites/%s: form %s is not in catalog.forms" % (sid, code))
+        for mod in needs.get("modules") or {}:
+            if mod not in modules:
+                out.append("sites/%s: module %s is not in catalog.modules" % (sid, mod))
+    return out
+
+
 def save_doc(doc):
+    errors = problems(doc)
+    if errors:
+        raise ValueError("sites.yaml would be invalid, not written:\n  " + "\n  ".join(errors))
     os.makedirs(MATRIX, exist_ok=True)
     with open(SITES_FILE, "w", encoding="utf-8") as fh:
         fh.write(render_doc(doc))
