@@ -1,6 +1,6 @@
 # Comment nous décrire un besoin à tester
 
-> **Pour vérifier un formulaire**, le plus simple est la [fiche Excel pré-remplie](fiches/README.md) : tout est déjà listé, il suffit de répondre Oui ou Non ligne par ligne. Ce qui suit sert pour les autres besoins (droits d'accès, rapports, parcours patient...).
+> **Pour les formulaires, rien de nouveau à remplir** : les cas de test sont générés à partir de l'onglet du formulaire dans le classeur de métadonnées ([explications](metadonnees/README.md)). Pour un formulaire qui n'a pas encore d'onglet, il existe une [fiche Excel pré-remplie](fiches/README.md). Ce qui suit sert pour les autres besoins (droits d'accès, rapports, parcours patient...).
 
 Pas besoin de format technique. Pour chaque besoin, il suffit de répondre à 3 questions :
 

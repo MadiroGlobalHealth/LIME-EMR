@@ -13,6 +13,7 @@ Accept any of: a Jira key (`LIME2-123`, read it with the Jira tools if connected
 
 ## Steps
 
+0. **If the input is the MSF metadata workbook** (or a form tab of it): run `python3 scripts/metadata-check.py <workbook> --form "<tab>"` (or `--all`). It derives test cases from the Skip logic, Mandatory, Lower/Upper limit columns and marks each as matching the form JSON or not. Then: write config-level tests for the matching rules, list every "❌ Écart" for the team to decide whether the form or the metadata is wrong (never assume the form is right), and handle the Calculation / Custom Logic columns by hand. See `docs/testing/metadonnees/README.md`.
 0. **If the input is a returned form review sheet** (`docs/testing/fiches/retours/*.xlsx`, made by `scripts/form-test-sheet.py`): read it with openpyxl. Tab `Questions`: the hidden column K is the question id; column H is MSF's verdict (Oui / Non / Je ne sais pas), I the correction, J a remark or example. Tab `Scénarios`: Pour qui / Si je fais / Je dois voir / Important, ignore the grey example row. Tab `Listes longues`: remarks on individual answers.
    - "Oui" rows: the current configuration is confirmed. Generate test cases that lock it in (skip logic both ways, limits on both sides, mandatory), mostly at configuration level.
    - "Non" rows: a change request. Generate the test case for the expected behaviour (it will fail until the form is fixed) and list the change in a summary for the team to open a Jira ticket. Never edit the form yourself from the sheet.

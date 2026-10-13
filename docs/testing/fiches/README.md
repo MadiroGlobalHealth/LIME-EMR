@@ -1,5 +1,7 @@
 # Fiches de vérification par formulaire
 
+> À utiliser seulement pour un formulaire **sans onglet dans le classeur de métadonnées**. Sinon, les cas de test sont générés directement depuis l'onglet : voir [metadonnees/](../metadonnees/README.md).
+
 Une fiche Excel par formulaire, pré-remplie à partir de la configuration : chaque question, ses réponses, si elle est obligatoire, quand elle s'affiche, ses limites. L'équipe MSF coche seulement « Correct ? Oui / Non » et corrige ce qui ne va pas, puis ajoute des scénarios « Si je fais... je dois voir... ».
 
 - Exemple rempli (réponses fictives) : [EXEMPLE_F48-Blood_transfusion_form.xlsx](EXEMPLE_F48-Blood_transfusion_form.xlsx)
