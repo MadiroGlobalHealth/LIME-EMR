@@ -15,6 +15,7 @@ see>" lines in the Comments column of a form tab, and steps in the
 Usage:
   python3 scripts/metadata-check.py <metadata.xlsx> --form "F17-Surgery Admission" [--out report.md]
   python3 scripts/metadata-check.py <metadata.xlsx> --all [--out summary.md]
+  python3 scripts/metadata-check.py <metadata.xlsx> --scenarios [--site Mosul] [--release "Release 1"]
 """
 import argparse
 import datetime
@@ -194,9 +195,14 @@ def answer_concepts(q):
 
 # --- comparison and test cases ------------------------------------------------
 
-def read_scenarios(wb):
-    """Steps of the User flow template tab (Step, Action, Description, Data, User, Permission,
-    Comment), grouped by the form code that prefixes Step (F17-1 -> F17)."""
+RESULT_STATUS = {"pass": OK, "fail": KO, "blocked": WARN}
+
+
+def read_scenarios(wb, site=None, release=None):
+    """Rows of the User flow template tab, grouped by the form code that prefixes
+    Step (F17-1 -> F17, anything else -> "(other)"). Optional columns Area, Site,
+    Release, Priority, Result and Tested on are read when present; site and
+    release filter the rows (a row with Site "All sites" or empty matches any site)."""
     out = {}
     if SCENARIOS_TAB not in wb.sheetnames:
         return out
@@ -206,16 +212,49 @@ def read_scenarios(wb):
         return out
     names = [str(x).strip() if x else "" for x in rows[header]]
     col = lambda name: names.index(name) if name in names else None
-    c_step, c_do, c_see, c_who = col("Step"), col("Action"), col("Description"), col("User")
     cell = lambda r, c: str(r[c]).strip() if c is not None and c < len(r) and r[c] is not None else ""
+    c = {k: col(k) for k in ("Step", "Area", "Site", "Release", "Action", "Description", "User", "Priority", "Result", "Tested on")}
     for r in rows[header + 1:]:
-        if not cell(r, c_do):
+        if not cell(r, c["Action"]):
             continue
-        step = cell(r, c_step)
+        row_site = cell(r, c["Site"])
+        if site and row_site.lower() not in ("", "all sites", site.lower()):
+            continue
+        if release and cell(r, c["Release"]).lower() != release.lower():
+            continue
+        step = cell(r, c["Step"])
         m = re.match(r"(F\d\d)", step)
-        out.setdefault(m.group(1) if m else "(other)", []).append(
-            {"step": step, "who": cell(r, c_who), "do": cell(r, c_do), "see": cell(r, c_see)})
+        out.setdefault(m.group(1) if m else "(other)", []).append({
+            "step": step, "area": cell(r, c["Area"]), "site": row_site or "All sites", "release": cell(r, c["Release"]),
+            "who": cell(r, c["User"]), "do": cell(r, c["Action"]), "see": cell(r, c["Description"]),
+            "priority": cell(r, c["Priority"]), "result": cell(r, c["Result"]), "tested_on": cell(r, c["Tested on"])})
     return out
+
+
+def scenario_status(sc):
+    return RESULT_STATUS.get(sc["result"].lower(), TODO)
+
+
+def scenarios_report(scenarios, site=None, release=None):
+    rows = [sc for group in scenarios.values() for sc in group]
+    esc = lambda v: str(v or "").replace("|", "\\|")
+    scope = ", ".join(x for x in (site, release) if x) or "all sites and releases"
+    lines = [f"# {SCENARIOS_TAB}: {scope}", ""]
+    if not rows:
+        return "\n".join(lines + ["No test matches."]) + "\n"
+    count = lambda st: sum(scenario_status(sc) == st for sc in rows)
+    lines += [f"**{len(rows)} tests**: {count(OK)} pass, {count(KO)} fail, {count(WARN)} blocked, {count(TODO)} not run.", ""]
+    lines += ["| Area | Tests | Pass | Fail | Blocked | Not run |", "|---|---|---|---|---|---|"]
+    for area in sorted({sc["area"] or "(no area)" for sc in rows}):
+        sub = [sc for sc in rows if (sc["area"] or "(no area)") == area]
+        n = lambda st: sum(scenario_status(sc) == st for sc in sub)
+        lines.append(f"| {area} | {len(sub)} | {n(OK)} | {n(KO)} | {n(WARN)} | {n(TODO)} |")
+    lines += ["", "| Step | Site | Release | Action | Description | User | Priority | Result | Tested on |",
+              "|---|---|---|---|---|---|---|---|---|"]
+    for sc in rows:
+        lines.append(f"| {esc(sc['step'])} | {esc(sc['site'])} | {esc(sc['release'])} | {esc(sc['do'])} | {esc(sc['see'])} | "
+                     f"{esc(sc['who'])} | {esc(sc['priority'])} | {scenario_status(sc)} | {esc(sc['tested_on'])} |")
+    return "\n".join(lines) + "\n"
 
 
 def check_form(ws, form_path, scenarios=()):
@@ -349,7 +388,7 @@ def check_form(ws, form_path, scenarios=()):
         for do, see in r["tests"]:
             case(r["question"], do, see, "Colonne Comments (Test:)", TODO, kind="custom")
     for sc in scenarios:
-        case(sc["who"] or "", sc["do"], sc["see"], f"{SCENARIOS_TAB}, étape {sc['step']}", TODO, kind="custom")
+        case(sc["who"] or "", sc["do"], sc["see"], f"{SCENARIOS_TAB}, {sc['step']} ({sc['site']})", scenario_status(sc), kind="custom")
     return cases, findings
 
 
@@ -393,14 +432,19 @@ def main():
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--form", help='metadata tab name, e.g. "F17-Surgery Admission"')
     g.add_argument("--all", action="store_true", help="summary for every form tab")
+    g.add_argument("--scenarios", action="store_true", help=f"tests of the {SCENARIOS_TAB} tab, with results")
+    p.add_argument("--site", help="only tests for this site (plus All sites), e.g. Mosul")
+    p.add_argument("--release", help='only tests for this release, e.g. "Release 1"')
     p.add_argument("--form-file", help="form JSON to compare with (default: distro form with the same Fxx prefix)")
     p.add_argument("--out")
     args = p.parse_args()
     wb = load_workbook(args.metadata, read_only=True, data_only=True)
-    scenarios = read_scenarios(wb)
+    scenarios = read_scenarios(wb, args.site, args.release)
     day = datetime.date.today().strftime("%b %-d")
 
-    if args.form:
+    if args.scenarios:
+        md = scenarios_report(scenarios, args.site, args.release)
+    elif args.form:
         form_path = form_file_for(args.form, args.form_file)
         if not form_path:
             sys.exit(f"No form JSON found for {args.form}; pass --form-file")
