@@ -15,7 +15,7 @@ see>" lines in the Comments column of a form tab, and steps in the
 Usage:
   python3 scripts/metadata-check.py <metadata.xlsx> --form "F17-Surgery Admission" [--out report.md]
   python3 scripts/metadata-check.py <metadata.xlsx> --all [--out summary.md]
-  python3 scripts/metadata-check.py <metadata.xlsx> --scenarios [--site Mosul] [--release "Release 1"]
+  python3 scripts/metadata-check.py <metadata.xlsx> --scenarios [--site Mosul] [--release 1]
 """
 import argparse
 import datetime
@@ -213,7 +213,9 @@ def read_scenarios(wb, site=None, release=None):
     names = [str(x).strip() if x else "" for x in rows[header]]
     col = lambda name: names.index(name) if name in names else None
     cell = lambda r, c: str(r[c]).strip() if c is not None and c < len(r) and r[c] is not None else ""
-    c = {k: col(k) for k in ("Step", "Area", "Site", "Release", "Action", "Description", "User", "Priority", "Result", "Tested on")}
+    c = {k: col(k) for k in ("Step", "Feature", "Category", "Area", "Site", "Release", "Action", "Description", "User",
+                             "Priority", "Result", "Tested on")}
+    categories = feature_categories(wb)
     for r in rows[header + 1:]:
         if not cell(r, c["Action"]):
             continue
@@ -225,10 +227,22 @@ def read_scenarios(wb, site=None, release=None):
         step = cell(r, c["Step"])
         m = re.match(r"(F\d\d)", step)
         out.setdefault(m.group(1) if m else "(other)", []).append({
-            "step": step, "area": cell(r, c["Area"]), "site": row_site or "All sites", "release": cell(r, c["Release"]),
+            "step": step, "feature": cell(r, c["Feature"]) or cell(r, c["Area"]),
+            "category": cell(r, c["Category"]) or categories.get(cell(r, c["Feature"]).lower(), ""),
+            "site": row_site or "All sites", "release": cell(r, c["Release"]),
             "who": cell(r, c["User"]), "do": cell(r, c["Action"]), "see": cell(r, c["Description"]),
             "priority": cell(r, c["Priority"]), "result": cell(r, c["Result"]), "tested_on": cell(r, c["Tested on"])})
     return out
+
+
+def feature_categories(wb):
+    """Feature -> Category from the Features tab (used when the Category formula has no cached value)."""
+    if "Features" not in wb.sheetnames:
+        return {}
+    rows = list(wb["Features"].iter_rows(min_row=1, max_col=3, values_only=True))
+    if not rows or not rows[0] or str(rows[0][0]).strip() != "Feature":
+        return {}
+    return {str(r[0]).strip().lower(): str(r[2] or "").strip() for r in rows[1:] if r and r[0] and len(r) > 2}
 
 
 def scenario_status(sc):
@@ -244,15 +258,16 @@ def scenarios_report(scenarios, site=None, release=None):
         return "\n".join(lines + ["No test matches."]) + "\n"
     count = lambda st: sum(scenario_status(sc) == st for sc in rows)
     lines += [f"**{len(rows)} tests**: {count(OK)} pass, {count(KO)} fail, {count(WARN)} blocked, {count(TODO)} not run.", ""]
-    lines += ["| Area | Tests | Pass | Fail | Blocked | Not run |", "|---|---|---|---|---|---|"]
-    for area in sorted({sc["area"] or "(no area)" for sc in rows}):
-        sub = [sc for sc in rows if (sc["area"] or "(no area)") == area]
+    lines += ["| Category | Feature | Tests | Pass | Fail | Blocked | Not run |", "|---|---|---|---|---|---|---|"]
+    keys = sorted({(sc["category"] or "(no category)", sc["feature"] or "(no feature)") for sc in rows})
+    for cat, feat in keys:
+        sub = [sc for sc in rows if (sc["category"] or "(no category)", sc["feature"] or "(no feature)") == (cat, feat)]
         n = lambda st: sum(scenario_status(sc) == st for sc in sub)
-        lines.append(f"| {area} | {len(sub)} | {n(OK)} | {n(KO)} | {n(WARN)} | {n(TODO)} |")
-    lines += ["", "| Step | Site | Release | Action | Description | User | Priority | Result | Tested on |",
-              "|---|---|---|---|---|---|---|---|---|"]
+        lines.append(f"| {cat} | {feat} | {len(sub)} | {n(OK)} | {n(KO)} | {n(WARN)} | {n(TODO)} |")
+    lines += ["", "| Step | Feature | Site | Release | Action | Description | User | Priority | Result | Tested on |",
+              "|---|---|---|---|---|---|---|---|---|---|"]
     for sc in rows:
-        lines.append(f"| {esc(sc['step'])} | {esc(sc['site'])} | {esc(sc['release'])} | {esc(sc['do'])} | {esc(sc['see'])} | "
+        lines.append(f"| {esc(sc['step'])} | {esc(sc['feature'])} | {esc(sc['site'])} | {esc(sc['release'])} | {esc(sc['do'])} | {esc(sc['see'])} | "
                      f"{esc(sc['who'])} | {esc(sc['priority'])} | {scenario_status(sc)} | {esc(sc['tested_on'])} |")
     return "\n".join(lines) + "\n"
 
@@ -434,7 +449,7 @@ def main():
     g.add_argument("--all", action="store_true", help="summary for every form tab")
     g.add_argument("--scenarios", action="store_true", help=f"tests of the {SCENARIOS_TAB} tab, with results")
     p.add_argument("--site", help="only tests for this site (plus All sites), e.g. Mosul")
-    p.add_argument("--release", help='only tests for this release, e.g. "Release 1"')
+    p.add_argument("--release", help="only tests for this release, e.g. 1")
     p.add_argument("--form-file", help="form JSON to compare with (default: distro form with the same Fxx prefix)")
     p.add_argument("--out")
     args = p.parse_args()

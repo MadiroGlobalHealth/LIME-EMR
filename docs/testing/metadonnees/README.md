@@ -18,7 +18,8 @@ Chaque règle déjà écrite dans un onglet de formulaire devient un ou deux cas
 | Où (existant) | Comment | Pour quoi |
 |---|---|---|
 | Onglet du formulaire, colonne **Comments** | Une ligne par test : `Test: Enter 450 -> A warning: the weight is not plausible` | Un test sur la question de la ligne : calcul, vraisemblance, bouton. Pas besoin de répéter la skip logic. |
-| Onglet **User flow template** : Step, Area, Site, Release, Action, Description, Data, User, Permission, Priority, Result, Tested on, Comment | Une ligne par test. Site = « All sites » ou un site ; Release = phase ; Result (Not run / Pass / Fail / Blocked) et Tested on sont remplis au moment du test. Listes déroulantes et filtres sur chaque colonne | Parcours patient, rôles et accès, rendez-vous, DHIS2, rapports, propres à un site ou communs |
+| Onglet **User flow template** : Step, Feature, Category, Site, Release, Action, Description, Data, User, Permission, Priority, Result, Tested on, Comment | Une ligne par test. Feature se choisit dans la liste de l'onglet Features, Category se remplit seule. Site = « All sites » ou un site ; Release = phase ; Result et Tested on au moment du test | Parcours patient, rôles et accès, rendez-vous, DHIS2, rapports, propres à un site ou communs |
+| Onglet **Features** (existant) : Feature, Release, Category, puis Tests, Pass, Fail, Blocked, Not run calculés | Une ligne par fonctionnalité ; choisir le site en K1 pour voir la couverture de ce site | Vue d'ensemble par catégorie, fonctionnalité, site et phase |
 
 Une ligne ajoutée à l'onglet **Form Guidance** explique la règle, avec un bon et un mauvais exemple, comme pour la skip logic.
 
@@ -27,7 +28,7 @@ Une ligne ajoutée à l'onglet **Form Guidance** explique la règle, avec un bon
 `--all` donne, pour chaque formulaire, la valeur à reporter dans les colonnes **Structure** (questions présentes, obligatoires, limites) et **Skip logic** de l'onglet « Form QA Tracker », dans le même style que les entrées actuelles (« MB, Aug 30 ») : `Auto, Oct 13: ✅ 8/8`. Le détail d'un formulaire (chaque cas, chaque écart) s'obtient avec `--form`.
 
 ```bash
-python3 scripts/metadata-check.py "LIME EMR - Iraq Metadata - Release 1.xlsx" --scenarios --site Mosul --release "Release 1"
+python3 scripts/metadata-check.py "LIME EMR - Iraq Metadata - Release 1.xlsx" --scenarios --site Mosul --release 1
 python3 scripts/metadata-check.py "LIME EMR - Iraq Metadata - Release 1.xlsx" --all
 python3 scripts/metadata-check.py "LIME EMR - Iraq Metadata - Release 1.xlsx" --form "F17-Surgery Admission"
 ```
