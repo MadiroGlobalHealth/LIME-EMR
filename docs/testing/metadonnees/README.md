@@ -18,12 +18,12 @@ Chaque règle déjà écrite dans un onglet de formulaire devient un ou deux cas
 | Où (existant) | Comment | Pour quoi |
 |---|---|---|
 | Onglet du formulaire, colonne **Comments** | Une ligne par test : `Test: Enter 450 -> A warning: the weight is not plausible` | Un test sur la question de la ligne : calcul, vraisemblance, bouton. Pas besoin de répéter la skip logic. |
-| Onglet **User flow template** : Step, Feature, Category, Site, Release, Action, Description, Data, User, Permission, Priority, Result, Tested on, Comment | Une ligne par test. Feature se choisit dans la liste de l'onglet Features, Category se remplit seule. Site = « All sites » ou un site ; Release = phase ; Result et Tested on au moment du test | Parcours patient, rôles et accès, rendez-vous, DHIS2, rapports, propres à un site ou communs |
-| Onglet **Features** (existant) : Feature, Release, Category, puis Tests, Pass, Fail, Blocked, Not run calculés | Une ligne par fonctionnalité ; choisir le site en K1 pour voir la couverture de ce site | Vue d'ensemble par catégorie, fonctionnalité, site et phase |
+| Onglet **User flow template** : Test ID, Title, Feature, Category, Sites, From release, Role, Preconditions, Steps, Expected result, Priority, Comment | Une ligne par test. Feature, Sites, From release, Role, Preconditions et Priority se choisissent dans des listes ; Category se remplit seule ; Steps une étape par ligne. Pas de colonne de résultat : un test écrit une fois sert pour tous les sites et toutes les phases | Parcours patient, rôles et accès, rendez-vous, DHIS2, rapports, propres à un site ou communs |
+| Onglet **Features** (existant) : Feature, Release, Category, Tests | Une ligne par fonctionnalité ; Tests compte les tests du site choisi en K1 | Voir ce qui est couvert et ce qui manque, par fonctionnalité et par site |
 
 Une ligne ajoutée à l'onglet **Form Guidance** explique la règle, avec un bon et un mauvais exemple, comme pour la skip logic.
 
-## 3. Les résultats vont dans le Form QA Tracker existant
+## 3. Madiro exécute les tests et reporte les résultats dans le Form QA Tracker existant
 
 `--all` donne, pour chaque formulaire, la valeur à reporter dans les colonnes **Structure** (questions présentes, obligatoires, limites) et **Skip logic** de l'onglet « Form QA Tracker », dans le même style que les entrées actuelles (« MB, Aug 30 ») : `Auto, Oct 13: ✅ 8/8`. Le détail d'un formulaire (chaque cas, chaque écart) s'obtient avec `--form`.
 

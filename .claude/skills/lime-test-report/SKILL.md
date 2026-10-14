@@ -18,6 +18,10 @@ description: Run the LIME EMR automated tests (configuration and/or browser suit
    - Chat: the requirements table plus failures and gaps.
    - For MSF or a release: French summary first (feu vert / orange / rouge per module, defects found, open questions), technical detail after. Publish as a page or a Jira comment when asked; never post to Jira, Slack or GitHub without the user's go-ahead.
 
+## Tests defined by MSF in the metadata workbook
+
+The `User flow template` tab holds test definitions only (Test ID, Title, Feature, Sites, From release, Role, Preconditions, Steps, Expected result, Priority). List the tests in scope with `python3 scripts/metadata-check.py <workbook> --scenarios --site <site> --release <n>`, run each one on the target environment (as the given Role, after creating the Preconditions with fictitious data), and report per test: pass / fail / blocked, actual result, environment, date. Never write results into MSF's workbook: give the report, plus one summary value per feature or form for their Form QA Tracker (`Auto, <date>: ✅ 8/8`).
+
 ## Rules
 
 - Report outcomes as they are: a skipped suite is "not run", not "passed". If the instance was unreachable, say the browser suite did not run.

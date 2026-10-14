@@ -207,14 +207,18 @@ def read_scenarios(wb, site=None, release=None):
     if SCENARIOS_TAB not in wb.sheetnames:
         return out
     rows = list(wb[SCENARIOS_TAB].iter_rows(values_only=True))
-    header = next((i for i, r in enumerate(rows[:5]) if r and "Action" in [str(x).strip() for x in r if x]), None)
+    header = next((i for i, r in enumerate(rows[:5])
+                   if r and {"Action", "Steps"} & {str(x).strip() for x in r if x}), None)
     if header is None:
         return out
     names = [str(x).strip() if x else "" for x in rows[header]]
-    col = lambda name: names.index(name) if name in names else None
+    # Current column names first, then the original template names.
+    aliases = {"Step": ("Test ID", "Step"), "Action": ("Steps", "Action"), "Description": ("Expected result", "Description"),
+               "User": ("Role", "User"), "Site": ("Sites", "Site"), "Release": ("From release", "Release")}
+    col = lambda name: next((names.index(n) for n in aliases.get(name, (name,)) if n in names), None)
     cell = lambda r, c: str(r[c]).strip() if c is not None and c < len(r) and r[c] is not None else ""
-    c = {k: col(k) for k in ("Step", "Feature", "Category", "Area", "Site", "Release", "Action", "Description", "User",
-                             "Priority", "Result", "Tested on")}
+    c = {k: col(k) for k in ("Step", "Title", "Feature", "Category", "Area", "Site", "Release", "Action", "Description",
+                             "User", "Preconditions", "Priority", "Result", "Tested on")}
     categories = feature_categories(wb)
     for r in rows[header + 1:]:
         if not cell(r, c["Action"]):
@@ -224,12 +228,13 @@ def read_scenarios(wb, site=None, release=None):
             continue
         if release and cell(r, c["Release"]).lower() != release.lower():
             continue
-        step = cell(r, c["Step"])
+        step = cell(r, c["Step"]) or f"ROW-{rows.index(r) + 1}"
         m = re.match(r"(F\d\d)", step)
         out.setdefault(m.group(1) if m else "(other)", []).append({
             "step": step, "feature": cell(r, c["Feature"]) or cell(r, c["Area"]),
             "category": cell(r, c["Category"]) or categories.get(cell(r, c["Feature"]).lower(), ""),
             "site": row_site or "All sites", "release": cell(r, c["Release"]),
+            "title": cell(r, c["Title"]), "preconditions": cell(r, c["Preconditions"]),
             "who": cell(r, c["User"]), "do": cell(r, c["Action"]), "see": cell(r, c["Description"]),
             "priority": cell(r, c["Priority"]), "result": cell(r, c["Result"]), "tested_on": cell(r, c["Tested on"])})
     return out
@@ -264,11 +269,12 @@ def scenarios_report(scenarios, site=None, release=None):
         sub = [sc for sc in rows if (sc["category"] or "(no category)", sc["feature"] or "(no feature)") == (cat, feat)]
         n = lambda st: sum(scenario_status(sc) == st for sc in sub)
         lines.append(f"| {cat} | {feat} | {len(sub)} | {n(OK)} | {n(KO)} | {n(WARN)} | {n(TODO)} |")
-    lines += ["", "| Step | Feature | Site | Release | Action | Description | User | Priority | Result | Tested on |",
-              "|---|---|---|---|---|---|---|---|---|---|"]
+    lines += ["", "| Test ID | Title | Feature | Sites | From release | Role | Preconditions | Steps | Expected result | Priority | Result |",
+              "|---|---|---|---|---|---|---|---|---|---|---|"]
     for sc in rows:
-        lines.append(f"| {esc(sc['step'])} | {esc(sc['feature'])} | {esc(sc['site'])} | {esc(sc['release'])} | {esc(sc['do'])} | {esc(sc['see'])} | "
-                     f"{esc(sc['who'])} | {esc(sc['priority'])} | {scenario_status(sc)} | {esc(sc['tested_on'])} |")
+        lines.append(f"| {esc(sc['step'])} | {esc(sc['title'])} | {esc(sc['feature'])} | {esc(sc['site'])} | {esc(sc['release'])} | "
+                     f"{esc(sc['who'])} | {esc(sc['preconditions'])} | {esc(sc['do']).replace(chr(10), '<br>')} | {esc(sc['see'])} | "
+                     f"{esc(sc['priority'])} | {scenario_status(sc)} |")
     return "\n".join(lines) + "\n"
 
 
