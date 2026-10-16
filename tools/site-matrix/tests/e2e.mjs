@@ -147,8 +147,14 @@ check(await page.getByRole("heading", { name: "Homs", level: 1 }).waitFor({ time
 await page.getByRole("button", { name: "LIME EMR sites, home" }).click();
 await page.getByRole("button", { name: "Mombasa", exact: true }).click();
 await page.getByRole("heading", { name: "Mombasa", level: 1 }).waitFor();
+const work = page.getByTestId("work-card");
+const wt = await work.innerText();
+check(wt.includes("Create the sites/mombasa folder") && /Add forms \(\d+\)/.test(wt) && !wt.includes("Choose the MSF ID prefix") && !wt.includes("Questions for the site team"),
+  "site page: work left lists the implementers' work once the team has answered (prefix and date saved above)");
 await page.getByLabel("MSF ID prefix").fill("KE-MSA-");
 await page.getByLabel("MSF ID prefix").press("Enter");
+check((await work.innerText()).includes("Set the MSF ID prefix to KE-MSA-"), "work left follows unsaved changes");
+if (SHOTS) await page.screenshot({ path: `${SHOTS}/e-work.png`, fullPage: false });
 await page.getByRole("tab", { name: "Forms" }).click();
 await page.getByRole("radio", { name: "All forms" }).click();
 await page.getByRole("button", { name: /^Antenatal Care/ }).click().catch(() => {});

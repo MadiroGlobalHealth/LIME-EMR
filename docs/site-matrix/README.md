@@ -23,7 +23,8 @@ Work still to do for a site is what its decisions ask for that `detected` does n
 `python3 scripts/site-profiles/gaps.py <site>` prints it as a checklist, sites with the nearest or
 overdue milestone first. With `--json` it prints the same work as tasks (stable id, where to make
 the change, and the condition on `detected` that shows it is done) for an AI implementer or a
-tracker.
+tracker. The app shows the same list as "Work left" on each site page, starting with the questions
+the site team still has to answer.
 
 The Site Matrix app (`tools/site-matrix`, deployed on Vercel) reads this file live from GitHub and
 saves every change as a commit by the person who signed in.

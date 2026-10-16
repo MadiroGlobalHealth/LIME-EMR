@@ -104,11 +104,11 @@ def _ordered_site(site):
     return out
 
 
-def load_doc():
-    if not os.path.exists(SITES_FILE):
+def load_doc(path=SITES_FILE):
+    if not os.path.exists(path):
         return {"version": VERSION, "orgs": {}, "vocab": {"milestones": [], "integrations": []}, "sites": {},
                 "catalog": {"forms": [], "modules": []}}
-    doc = _plain(yaml.safe_load(open(SITES_FILE, encoding="utf-8")) or {})
+    doc = _plain(yaml.safe_load(open(path, encoding="utf-8")) or {})
     doc.setdefault("sites", {})
     for s in doc["sites"].values():
         expand_forms(s)

@@ -100,7 +100,9 @@ Locations Services, Forms) and meeting notes.
 
 This is the "implementer" workflow: turn what people decided in `sites.yaml` into config changes.
 
-1. `python3 scripts/site-profiles/gaps.py --json <site>` lists the work as tasks. Each task has a
+1. `python3 scripts/site-profiles/gaps.py --json <site>` lists the work as tasks (the app shows
+   the same list as "Work left" on each site page). Tasks with `owner: site_team` are decisions
+   still to take: ask the team, do not guess them. Each task has a
    stable `id` (`<site>/<kind>/<item>`), the `how` step from `how_to_apply`, a `done_when`
    condition on `detected`, and `depends_on` (the site folder comes first for a new site).
    Forms, modules, the ID prefix, languages, identifiers, locations and DHIS2 are compared with
@@ -122,6 +124,10 @@ titled `site-matrix(<site ids>): ...`. Before writing it re-reads the file and a
 that version, so simultaneous edits are kept. Deployed on Vercel; set `VITE_REPO_BRANCH` to the
 branch to edit, and `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` from a GitHub App installed on the
 repository for "Sign in with GitHub".
+
+`src/lib/plan.ts` mirrors `gaps.py`; when changing either, change both and regenerate
+`tests/fixtures/plan-expected.json` with
+`python3 scripts/site-profiles/gaps.py --json --file=tools/site-matrix/tests/fixtures/plan-sites.yaml --date=2026-10-16`.
 
 After changing `sites.yaml` from the repo side, run `build.py` so `src/snapshot.json` (the app's
 offline copy) stays current. Before committing app changes: `npm test`, `npm run build`, and the
