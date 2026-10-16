@@ -55,7 +55,8 @@ Scripts (Python 3 + PyYAML), run from the repo root:
 
 ```bash
 python3 scripts/site-profiles/extract.py [site ...]   # refresh `detected` from the repo (adds new distro forms to the catalog)
-python3 scripts/site-profiles/gaps.py [site ...]      # what is needed but not built, and built but not needed, as a checklist
+python3 scripts/site-profiles/gaps.py [site ...]      # the work left per site, as a checklist (overdue sites first)
+python3 scripts/site-profiles/gaps.py --json [site]   # the same as tasks with ids, how_to_apply step and done_when
 python3 scripts/site-profiles/validate.py             # check sites.yaml against sites.schema.json and the catalog
 python3 scripts/site-profiles/build.py [--branch B]   # refresh the app's offline copy (tools/site-matrix/src/snapshot.json)
 ```
@@ -99,17 +100,18 @@ Locations Services, Forms) and meeting notes.
 
 This is the "implementer" workflow: turn what people decided in `sites.yaml` into config changes.
 
-1. `python3 scripts/site-profiles/gaps.py <site>` lists the work. Also compare `registration`,
-   `locations` and `integrations` with `detected` (a value set by people that differs from
-   `detected` is a change to make).
-2. For each item, follow `how_to_apply` in `sites.yaml` and change the files under
-   `sites/<site>` (or the distro for new shared forms). A new site needs its folder first
-   (`how_to_apply.new_site`). Keep each change minimal and in the repo's existing style.
-3. Run `python3 scripts/site-profiles/extract.py <site>`: `detected` must now show the change, and
+1. `python3 scripts/site-profiles/gaps.py --json <site>` lists the work as tasks. Each task has a
+   stable `id` (`<site>/<kind>/<item>`), the `how` step from `how_to_apply`, a `done_when`
+   condition on `detected`, and `depends_on` (the site folder comes first for a new site).
+   Forms, modules, the ID prefix, languages, identifiers, locations and DHIS2 are compared with
+   `detected`; anything else people set that differs from `detected` is also a change to make.
+2. For each task, follow its `how` and change the files under `sites/<site>` (or the distro for
+   new shared forms). Keep each change minimal and in the repo's existing style.
+3. Run `python3 scripts/site-profiles/extract.py <site>`: each task's `done_when` must now hold, and
    `gaps.py <site>` must no longer list it. `validate.py` must pass. Anything that does not converge is a mistake to fix,
    not something to paper over by editing `detected` or the decisions.
-4. Commit config and `sites.yaml` together on a branch and open a PR that lists the items done and
-   any left (with why). Do not change decisions (`forms`, `modules`, dates, status) to make gaps disappear;
+4. Commit config and `sites.yaml` together on a branch and open a PR that lists the task ids done
+   and any left (with why). Do not change decisions (`forms`, `modules`, dates, status) to make gaps disappear;
    ask the team instead.
 
 ## 4. The Site Matrix app

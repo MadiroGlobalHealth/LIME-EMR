@@ -33,6 +33,8 @@ jobs:
       - run: pip install pyyaml jsonschema
       - name: Check against sites.schema.json and the catalog
         run: python3 scripts/site-profiles/validate.py
+      - name: Build the work plan (gaps.py --json)
+        run: python3 scripts/site-profiles/gaps.py --json > /dev/null
       - name: Check the layout matches what the app and scripts write
         run: |
           python3 -c "import sys; sys.path.insert(0, 'scripts/site-profiles'); import profiles as p; p.save_doc(p.load_doc())"
