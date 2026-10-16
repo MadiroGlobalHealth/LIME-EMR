@@ -26,6 +26,7 @@ import { Textarea } from "./ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { STATUS_LABEL, StatusBadge } from "./chip";
 import { Dhis2Text, formsProgress, NextStep, relDays } from "./site-bits";
+import { siteTasks, type PlanTask } from "@/lib/plan";
 
 const STATUS_TEXT = STATUS_LABEL as Record<SiteStatus, string>;
 const REG_HINT: Record<string, string> = { id_prefix: "The start of every patient number (MSF ID)" };
@@ -97,11 +98,73 @@ const BackButton = ({ onBack }: { onBack: () => void }) => (
 function Overview({ s }: { s: SiteView }) {
   return (
     <div className="grid items-start gap-5 lg:grid-cols-2">
+      <WorkCard s={s} />
       <DatesCard s={s} />
       <RegistrationCard s={s} />
       <IntegrationCards s={s} />
       <NotesCard s={s} />
     </div>
+  );
+}
+
+const GROUP: Record<string, string> = {
+  "site/create": "Create the site in the repo",
+  "form/add": "Add forms",
+  "form/remove": "Remove forms",
+  "custom_form/build": "Build site-specific forms",
+  "module/enable": "Turn on modules",
+  "module/disable": "Turn off modules",
+};
+
+/** What is left: answers the site team owes, then config changes for the implementers (same list as gaps.py). */
+function WorkCard({ s }: { s: SiteView }) {
+  const { lib } = useMatrix();
+  const tasks = siteTasks(s, lib, {});
+  const asks = tasks.filter((t) => t.owner === "site_team");
+  const groups = new Map<string, PlanTask[]>();
+  for (const t of tasks.filter((x) => x.owner === "implementer")) {
+    const k = GROUP[`${t.kind}/${t.action}`] ? `${t.kind}/${t.action}` : t.id;
+    groups.set(k, [...(groups.get(k) || []), t]);
+  }
+  return (
+    <Card className="gap-4 lg:col-span-2" data-testid="work-card">
+      <CardHeader>
+        <CardTitle className="text-base">Work left</CardTitle>
+        <CardDescription>
+          {tasks.length ? "What this page asks for that the site's configuration does not have yet."
+            : s.detected?.site_folder ? "Nothing left: the configuration matches everything decided on this page."
+            : "Nothing planned yet. Once the status is Preparing, the work to set the site up is listed here."}
+        </CardDescription>
+      </CardHeader>
+      {!!tasks.length && (
+        <CardContent className="grid gap-5 sm:grid-cols-2">
+          {!!asks.length && (
+            <div className="grid content-start gap-2">
+              <h3 className="text-sm font-medium">Questions for the site team</h3>
+              <ul className="grid gap-1.5 text-sm">
+                {asks.map((t) => <li key={t.id} className="flex gap-2"><span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-hold" />{t.title}</li>)}
+              </ul>
+              <p className="text-xs text-muted-foreground">Answer them on this page; the implementers need them to start.</p>
+            </div>
+          )}
+          {!!groups.size && (
+            <div className="grid content-start gap-2">
+              <h3 className="text-sm font-medium">For the implementers</h3>
+              <ul className="grid gap-1.5 text-sm">
+                {[...groups].map(([k, list]) => (
+                  <li key={k} className="flex gap-2">
+                    <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-todo" />
+                    <span>
+                      {GROUP[k] && list.length > 1 ? <>{GROUP[k]} <span className="text-muted-foreground">({list.length}): {list.map((t) => (t.kind === "custom_form" ? s.forms?.[t.item]?.name : null) || t.item).join(", ")}</span></> : list[0].title}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      )}
+    </Card>
   );
 }
 

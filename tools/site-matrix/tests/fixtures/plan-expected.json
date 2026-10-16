@@ -1,0 +1,780 @@
+{
+  "format": 1,
+  "date": "2026-10-16",
+  "sites": [
+    {
+      "id": "mombasa",
+      "name": "Mombasa",
+      "org": "msf-ocg",
+      "status": "preparation",
+      "next_milestone": {
+        "id": "uat",
+        "label": "UAT ready",
+        "date": "2026-10-15",
+        "days": -1,
+        "overdue": true
+      },
+      "tasks": [
+        {
+          "id": "mombasa/decision/id_prefix",
+          "site": "mombasa",
+          "kind": "decision",
+          "item": "id_prefix",
+          "action": "decide",
+          "owner": "site_team",
+          "title": "Choose the MSF ID prefix",
+          "how": "Answered by the site team on the site page of the Site Matrix app.",
+          "done_when": "registration.id_prefix is set in sites.yaml"
+        },
+        {
+          "id": "mombasa/decision/languages",
+          "site": "mombasa",
+          "kind": "decision",
+          "item": "languages",
+          "action": "decide",
+          "owner": "site_team",
+          "title": "Choose the languages offered",
+          "how": "Answered by the site team on the site page of the Site Matrix app.",
+          "done_when": "registration.languages is set in sites.yaml"
+        },
+        {
+          "id": "mombasa/decision/golive",
+          "site": "mombasa",
+          "kind": "decision",
+          "item": "golive",
+          "action": "decide",
+          "owner": "site_team",
+          "title": "Set the planned go-live date",
+          "how": "Answered by the site team on the site page of the Site Matrix app.",
+          "done_when": "milestones.prod.date is set in sites.yaml"
+        },
+        {
+          "id": "mombasa/site/folder",
+          "site": "mombasa",
+          "kind": "site",
+          "item": "folder",
+          "action": "create",
+          "owner": "implementer",
+          "title": "Create the sites/mombasa folder",
+          "how": "Create sites/<id> by copying the closest existing site folder, rename its files and artifactId, and add <module>sites/<id></module> to the root pom.xml. Then run scripts/site-profiles/extract.py so `detected` is filled.",
+          "done_when": "detected.site_folder is set",
+          "note": "forms_default is not_needed: in the new pom.xml exclude every form and include only the needed ones.",
+          "depends_on": [
+            "mombasa/decision/id_prefix"
+          ]
+        },
+        {
+          "id": "mombasa/form/F11",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F11",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F11 Family Planning Assessment",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F11 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F12",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F12",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F12 Family Planning Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F12 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F29",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F29",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F29 MHPSS Baseline",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F29 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F30",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F30",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F30 MHPSS Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F30 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F31",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F31",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F31 mhGAP Baseline",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F31 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F32",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F32",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F32 mhGAP Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F32 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F33",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F33",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F33 MHPSS Closure",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F33 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F34",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F34",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F34 mhGAP Closure",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F34 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F40",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F40",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F40 Referral & Discharge",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F40 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F51",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F51",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F51 HIV Baseline",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F51 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F52",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F52",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F52 HIV Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F52 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F53",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F53",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F53 TB Baseline",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F53 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F54",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F54",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F54 TB Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F54 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F55",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F55",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F55 HBV Baseline",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F55 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F56",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F56",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F56 HBV Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F56 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F57",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F57",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F57 HCV Baseline",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F57 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F58",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F58",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F58 HCV Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F58 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/form/F59",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F59",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F59 Social Work Baseline",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F59 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ],
+          "note": "Likely not used, access given so the team can view content"
+        },
+        {
+          "id": "mombasa/form/F60",
+          "site": "mombasa",
+          "kind": "form",
+          "item": "F60",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add form F60 Social Work Follow-up",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F60 is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ],
+          "note": "Likely not used, access given so the team can view content"
+        },
+        {
+          "id": "mombasa/custom_form/MBA-GC",
+          "site": "mombasa",
+          "kind": "custom_form",
+          "item": "MBA-GC",
+          "action": "build",
+          "owner": "implementer",
+          "title": "Build the site-specific form General consultation",
+          "how": "Site-specific forms are entries of `forms` with custom: true: build the form JSON, add it to the distro ampathforms folder with the next free F-code, add it to `catalog.forms`, replace the site-specific key with that code (dropping custom), then include it in the site's pom.xml.",
+          "done_when": "MBA-GC is replaced by a library code that is in detected.forms",
+          "depends_on": [
+            "mombasa/site/folder"
+          ],
+          "note": "Combines OPD General (F44) and Gynaecology (F73). Specs to finalize",
+          "program": "Outpatient"
+        },
+        {
+          "id": "mombasa/registration/custom_form",
+          "site": "mombasa",
+          "kind": "registration",
+          "item": "custom_form",
+          "action": "build",
+          "owner": "implementer",
+          "title": "Build the site's own registration form",
+          "how": "sectionDefinitions of @openmrs/esm-patient-registration-app in sites/<site>/configs/openmrs/frontend_config/*.json; person attributes in sites/<site>/configs/openmrs/initializer_config/personattributetypes/*.csv.",
+          "done_when": "the registration config in sites/mombasa is site-specific (checked by a person)",
+          "depends_on": [
+            "mombasa/site/folder"
+          ],
+          "note": "Site-specific registration form (F00) defined in the Mombasa metadata file"
+        },
+        {
+          "id": "mombasa/location/mombasa-health-facility",
+          "site": "mombasa",
+          "kind": "location",
+          "item": "mombasa-health-facility",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add the location Mombasa Health Facility",
+          "how": "sites/<site>/configs/openmrs/initializer_config/locations/*.csv.",
+          "done_when": "Mombasa Health Facility is in detected.locations",
+          "depends_on": [
+            "mombasa/site/folder"
+          ]
+        },
+        {
+          "id": "mombasa/integration/dhis2",
+          "site": "mombasa",
+          "kind": "integration",
+          "item": "dhis2",
+          "action": "set_up",
+          "owner": "implementer",
+          "title": "Set up DHIS2 reporting (OpenFn)",
+          "how": "DHIS2 reporting runs in OpenFn: sites/<site>/configs/openfn/<project>.yaml (workflow triggers must be enabled), with changelog.md listing the version and the forms mapped. staging_project.yaml holds forms being tested.",
+          "done_when": "detected.integration.status is live",
+          "depends_on": [
+            "mombasa/site/folder"
+          ],
+          "note": "DHIS2 needs to be confirmed with the project."
+        }
+      ]
+    },
+    {
+      "id": "mosul",
+      "name": "Mosul",
+      "org": "msf-ocg",
+      "status": "live",
+      "next_milestone": {
+        "id": "handover",
+        "label": "Handover / closure",
+        "date": "2026-10-31",
+        "days": 15,
+        "overdue": false
+      },
+      "tasks": [
+        {
+          "id": "mosul/custom_form/MOS-DC",
+          "site": "mosul",
+          "kind": "custom_form",
+          "item": "MOS-DC",
+          "action": "build",
+          "owner": "implementer",
+          "title": "Build the site-specific form MH Discharge form",
+          "how": "Site-specific forms are entries of `forms` with custom: true: build the form JSON, add it to the distro ampathforms folder with the next free F-code, add it to `catalog.forms`, replace the site-specific key with that code (dropping custom), then include it in the site's pom.xml.",
+          "done_when": "MOS-DC is replaced by a library code that is in detected.forms",
+          "note": "MH field team to check what is needed",
+          "program": "Mental Health"
+        }
+      ]
+    },
+    {
+      "id": "ebola",
+      "name": "Ebola response",
+      "org": "msf-ocg",
+      "status": "preparation",
+      "next_milestone": {
+        "id": "prod",
+        "label": "Production target",
+        "date": "2026-12-01",
+        "days": 46,
+        "overdue": false
+      },
+      "tasks": [
+        {
+          "id": "ebola/decision/country",
+          "site": "ebola",
+          "kind": "decision",
+          "item": "country",
+          "action": "decide",
+          "owner": "site_team",
+          "title": "Choose the country",
+          "how": "Answered by the site team on the site page of the Site Matrix app.",
+          "done_when": "country is set in sites.yaml"
+        },
+        {
+          "id": "ebola/decision/id_prefix",
+          "site": "ebola",
+          "kind": "decision",
+          "item": "id_prefix",
+          "action": "decide",
+          "owner": "site_team",
+          "title": "Choose the MSF ID prefix",
+          "how": "Answered by the site team on the site page of the Site Matrix app.",
+          "done_when": "registration.id_prefix is set in sites.yaml"
+        },
+        {
+          "id": "ebola/decision/languages",
+          "site": "ebola",
+          "kind": "decision",
+          "item": "languages",
+          "action": "decide",
+          "owner": "site_team",
+          "title": "Choose the languages offered",
+          "how": "Answered by the site team on the site page of the Site Matrix app.",
+          "done_when": "registration.languages is set in sites.yaml"
+        },
+        {
+          "id": "ebola/decision/forms",
+          "site": "ebola",
+          "kind": "decision",
+          "item": "forms",
+          "action": "decide",
+          "owner": "site_team",
+          "title": "Choose the forms",
+          "how": "Answered by the site team on the site page of the Site Matrix app.",
+          "done_when": "forms is set in sites.yaml"
+        },
+        {
+          "id": "ebola/site/folder",
+          "site": "ebola",
+          "kind": "site",
+          "item": "folder",
+          "action": "create",
+          "owner": "implementer",
+          "title": "Create the sites/ebola folder",
+          "how": "Create sites/<id> by copying the closest existing site folder, rename its files and artifactId, and add <module>sites/<id></module> to the root pom.xml. Then run scripts/site-profiles/extract.py so `detected` is filled.",
+          "done_when": "detected.site_folder is set",
+          "depends_on": [
+            "ebola/decision/id_prefix"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bunia",
+      "name": "Bunia",
+      "org": "msf-ocg",
+      "status": "live",
+      "next_milestone": null,
+      "tasks": [
+        {
+          "id": "bunia/form/F15",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F15",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F15 Surgical Safety Checklist (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F15 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F16",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F16",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F16 Operative Report (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F16 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F17",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F17",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F17 Surgery Admission (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F17 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F18",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F18",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F18 Surgery Discharge (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F18 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F19",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F19",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F19 Pre-anesthesia Record (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F19 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F20",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F20",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F20 Recovery (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F20 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F21",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F21",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F21 Anesthesia Transfer (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F21 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F29",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F29",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F29 MHPSS Baseline (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F29 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F30",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F30",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F30 MHPSS Follow-up (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F30 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F31",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F31",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F31 mhGAP Baseline (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F31 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F32",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F32",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F32 mhGAP Follow-up (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F32 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F33",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F33",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F33 MHPSS Closure (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F33 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F34",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F34",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F34 mhGAP Closure (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F34 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F40",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F40",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F40 Referral & Discharge (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F40 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F46",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F46",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F46 Small Procedure Report (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F46 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F47",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F47",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F47 Pre-donation (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F47 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F48",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F48",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F48 Blood Transfusion (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F48 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F75",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F75",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F75 Wound Dressing (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F75 is not in detected.forms"
+        },
+        {
+          "id": "bunia/form/F76",
+          "site": "bunia",
+          "kind": "form",
+          "item": "F76",
+          "action": "remove",
+          "owner": "implementer",
+          "title": "Remove form F76 Radiology Request (built, marked not needed)",
+          "how": "Forms come from distro/configs/openmrs/initializer_config/ampathforms (codes F01, F02...). sites/<site>/pom.xml either excludes every form (<exclude>distro/configs/**/ampathforms/**/*.*</exclude>) and lists the wanted ones as <include> entries, or keeps all forms and excludes the unwanted ones. Add or remove the form file there. Decisions are in `forms`: a library code (F11) with its need, short or with a note.",
+          "done_when": "F76 is not in detected.forms"
+        },
+        {
+          "id": "bunia/module/lab",
+          "site": "bunia",
+          "kind": "module",
+          "item": "lab",
+          "action": "disable",
+          "owner": "implementer",
+          "title": "Turn off module Laboratory",
+          "how": "Frontend modules come from distro/configs/openmrs/frontend_assembly/spa-assemble-config.json. A site turns one off by listing its app (see `catalog.modules[].apps`) in the modulesToRemove property of sites/<site>/pom.xml.",
+          "done_when": "lab is not in detected.modules"
+        },
+        {
+          "id": "bunia/registration/id_prefix",
+          "site": "bunia",
+          "kind": "registration",
+          "item": "id_prefix",
+          "action": "set",
+          "owner": "implementer",
+          "title": "Set the MSF ID prefix to CD999-",
+          "how": "Prefix column of the MSF ID generator in sites/<site>/configs/openmrs/initializer_config/idgen/*.csv.",
+          "done_when": "detected.registration.id_prefix is CD999-",
+          "current": "CD511-"
+        },
+        {
+          "id": "bunia/registration/languages",
+          "site": "bunia",
+          "kind": "registration",
+          "item": "languages",
+          "action": "set",
+          "owner": "implementer",
+          "title": "Offer the languages fr, sw",
+          "how": "locale.allowed.list and default_locale global properties in sites/<site>/configs/openmrs/initializer_config/globalproperties/*.xml.",
+          "done_when": "detected.registration.languages has fr, sw",
+          "current": [
+            "en",
+            "fr"
+          ]
+        },
+        {
+          "id": "bunia/registration/identifier-national-id",
+          "site": "bunia",
+          "kind": "registration",
+          "item": "identifier-national-id",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Ask for the identifier National ID at registration",
+          "how": "defaultPatientIdentifierTypes of @openmrs/esm-patient-registration-app in sites/<site>/configs/openmrs/frontend_config/*.json; the types are defined in sites/<site>/configs/openmrs/initializer_config/patientidentifiertypes/*.csv (or the distro).",
+          "done_when": "National ID is in detected.registration.identifiers",
+          "spec": {
+            "name": "National ID",
+            "required": true
+          }
+        },
+        {
+          "id": "bunia/location/new-ward",
+          "site": "bunia",
+          "kind": "location",
+          "item": "new-ward",
+          "action": "add",
+          "owner": "implementer",
+          "title": "Add the location New ward",
+          "how": "sites/<site>/configs/openmrs/initializer_config/locations/*.csv.",
+          "done_when": "New ward is in detected.locations"
+        }
+      ]
+    }
+  ]
+}
