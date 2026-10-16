@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.vercel/
+.wrangler/
+*.tsbuildinfo
+
+# Keep the lockfile for this app (the root .gitignore drops lockfiles): hosts install exactly what was tested.
+!package-lock.json

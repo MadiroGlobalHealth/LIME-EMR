@@ -1,0 +1,131 @@
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+@source "../src";
+
+@custom-variant dark (&:is(.dark *));
+
+/* shadcn/ui theme (new-york, neutral base). The matrix adds its own state colors and the MSF red as
+   "brand"; everything else uses the standard shadcn tokens so stock components drop in unchanged. */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --brand: oklch(0.55 0.21 27);
+  --brand-foreground: oklch(0.985 0 0);
+
+  --on: oklch(0.52 0.12 158);
+  --on-bg: oklch(0.95 0.04 158);
+  --todo: oklch(0.5 0.15 258);
+  --todo-bg: oklch(0.95 0.03 258);
+  --hold: oklch(0.6 0.13 70);
+  --hold-bg: oklch(0.96 0.05 80);
+  --new: oklch(0.52 0.19 300);
+  --new-bg: oklch(0.95 0.04 300);
+  --none: oklch(0.7 0 0);
+}
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --brand: oklch(0.66 0.19 25);
+  --brand-foreground: oklch(0.985 0 0);
+
+  --on: oklch(0.78 0.13 158);
+  --on-bg: oklch(0.3 0.05 158);
+  --todo: oklch(0.78 0.11 258);
+  --todo-bg: oklch(0.3 0.06 258);
+  --hold: oklch(0.82 0.12 75);
+  --hold-bg: oklch(0.32 0.05 75);
+  --new: oklch(0.78 0.13 300);
+  --new-bg: oklch(0.3 0.06 300);
+  --none: oklch(0.55 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-on: var(--on);
+  --color-on-bg: var(--on-bg);
+  --color-todo: var(--todo);
+  --color-todo-bg: var(--todo-bg);
+  --color-hold: var(--hold);
+  --color-hold-bg: var(--hold-bg);
+  --color-new: var(--new);
+  --color-new-bg: var(--new-bg);
+  --color-none: var(--none);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* "Needed" chips: hatched, so planned work reads differently from what is built. */
+.chip-hatched {
+  background-image: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in oklch, var(--todo) 12%, transparent) 4px 6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

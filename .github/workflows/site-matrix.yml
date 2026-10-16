@@ -1,0 +1,59 @@
+name: Site matrix
+
+# Checks docs/site-matrix/sites.yaml and the Site Matrix app whenever either changes, including
+# edits saved from the app and edits made by hand or by an AI implementer.
+on:
+  push:
+    branches: ['main']
+    paths:
+      - 'docs/site-matrix/**'
+      - 'scripts/site-profiles/**'
+      - 'tools/site-matrix/**'
+      - '.github/workflows/site-matrix.yml'
+  pull_request:
+    paths:
+      - 'docs/site-matrix/**'
+      - 'scripts/site-profiles/**'
+      - 'tools/site-matrix/**'
+      - '.github/workflows/site-matrix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sites-yaml:
+    name: sites.yaml is valid and normalised
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml jsonschema
+      - name: Check against sites.schema.json and the catalog
+        run: python3 scripts/site-profiles/validate.py
+      - name: Check the layout matches what the app and scripts write
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'scripts/site-profiles'); import profiles as p; p.save_doc(p.load_doc())"
+          git diff --exit-code docs/site-matrix/sites.yaml || {
+            echo "::error file=docs/site-matrix/sites.yaml::Layout differs from the writers. Run the command above and commit the result.";
+            exit 1;
+          }
+
+  app:
+    name: Site Matrix app builds and tests pass
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/site-matrix
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/site-matrix/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
