@@ -467,6 +467,33 @@ sites:
     status: planned
     phase: Feasibility & budgeting
     milestones: {}
+    registration:
+      id_prefix: IQ147
+      languages:
+        - en
+        - ar
+    forms:
+      F41: needed
+      F42: needed
+      F43: needed
+      F01: not_needed
+      F02: not_needed
+      F03: not_needed
+      F04: not_needed
+      F05: not_needed
+      F06: not_needed
+      F07: not_needed
+      F29: not_needed
+      F30: not_needed
+      F31: not_needed
+      F32: not_needed
+      F33: not_needed
+      F34: not_needed
+      F35: not_needed
+    modules:
+      registration: needed
+      chart: needed
+      appointments: needed
     open_items:
       - Feasibility assessment and budgeting
   homs:
